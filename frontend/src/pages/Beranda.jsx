@@ -86,8 +86,13 @@ function Beranda() {
       {/* Header Navigasi Atas */}
       <nav className="navbar navbar-expand-lg bg-white shadow-sm py-3 mb-4">
         <div className="container px-4">
-          <span className="navbar-brand fw-bold text-primary">
-            🎓 Portal Akademik SMPN 1 Gamping
+          <span className="navbar-brand fw-bold text-primary d-flex align-items-center gap-2">
+            <img 
+              src="/logo_smpn1gmp.png" 
+              alt="Logo SMPN 1 Gamping"
+              style={{ width: '35px', height: '35px', objectFit: 'contain' }}
+            />
+            Portal Akademik SMPN 1 Gamping
           </span>
           <span className="navbar-text text-muted small d-none d-md-block">
             📅 {waktu}

@@ -206,7 +206,14 @@ const muatDaftarSiswa = async () => {
     <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '50px' }}>
       <nav className="navbar navbar-expand-lg bg-primary shadow-sm py-3 mb-5">
         <div className="container px-4">
-          <span className="navbar-brand fw-bold text-white">🎓 Panel Administrasi</span>
+          <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
+            <img
+              src="/logo_smpn1gmp.png"
+              alt="Logo SMPN 1 Gamping"
+              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+            />
+            Panel Admin
+          </span>
           <div className="ms-auto">
             <Link to="/beranda" className="btn btn-light text-primary btn-sm fw-bold">⬅ Beranda</Link>
           </div>

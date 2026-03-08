@@ -58,10 +58,17 @@ function Login() {
         style={{ width: '100%', maxWidth: '420px', borderRadius: '20px', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', backgroundColor: 'white' }}
       >
         <div className="text-center mb-4">
-          <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style={{ width: '65px', height: '65px', fontSize: '28px' }}>
-            🎓
+          <div 
+            className="d-inline-flex align-items-center justify-content-center mb-3 shadow-sm bg-white"
+            style={{ width: '65px', height: '65px', borderRadius: '50%' }}
+          >
+            <img 
+              src="/logo_smpn1gmp.png" 
+              alt="Logo SMPN 1 Gamping"
+              style={{ width: '45px', height: '45px', objectFit: 'contain' }}
+            />
           </div>
-          <h4 className="text-primary fw-bold mb-1">Portal Siswa</h4>
+          <h4 className="text-primary fw-bold mb-1">Login Siswa</h4>
           <p className="text-muted small">SMP Negeri 1 Gamping</p>
         </div>
         
@@ -89,7 +96,7 @@ function Login() {
             style={{ borderRadius: '12px' }}
             disabled={loading}
           >
-            {loading ? 'Memproses...' : 'Masuk ke Dashboard'}
+            {loading ? 'Memproses...' : 'Login'}
           </button>
         </form>
       </div>

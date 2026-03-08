@@ -12,9 +12,23 @@ function Profil() {
   });
   const [loading, setLoading] = useState(true);
   const nis = localStorage.getItem('nis');
+  const role = localStorage.getItem('role'); // Ambil role dari localstorage
 
   useEffect(() => {
     const fetchProfil = async () => {
+      // Jika Admin, tidak perlu fetch data siswa berdasarkan NIS
+      if (role === 'admin') {
+        setSiswa({
+          nis: 'ADMIN-ACCESS',
+          password: '*****',
+          nama: 'Administrator Sistem',
+          rombel: 'All Access',
+          asal_sekolah: 'SMPN 1 Gamping'
+        });
+        setLoading(false);
+        return;
+      }
+
       if (!nis) return;
       try {
         const res = await axios.get(`http://localhost:5000/api/siswa/${nis}`);
@@ -28,7 +42,7 @@ function Profil() {
       }
     };
     fetchProfil();
-  }, [nis]);
+  }, [nis, role]);
 
   if (loading) return <div className="text-center mt-5 fw-bold text-primary">Memuat Profil...</div>;
 
@@ -38,7 +52,14 @@ function Profil() {
       {/* Navbar Biru */}
       <nav className="navbar navbar-expand-lg bg-primary shadow-sm py-3 mb-5">
         <div className="container px-4">
-          <span className="navbar-brand fw-bold text-white">🎓 Portal Akademik</span>
+          <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
+            <img
+              src="/logo_smpn1gmp.png"
+              alt="Logo SMPN 1 Gamping"
+              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+            />
+            Portal Akademik
+          </span>
           <Link to="/beranda" className="btn btn-light text-primary btn-sm shadow-sm fw-bold px-3" style={{ borderRadius: '8px' }}>
             ⬅ Beranda
           </Link>
@@ -51,10 +72,10 @@ function Profil() {
             
             {/* Header Icon */}
             <div className="text-center mb-4">
-              <div className="text-primary mb-2" style={{ fontSize: '50px' }}>
-                👤
+              <div className={role === 'admin' ? "text-danger mb-2" : "text-primary mb-2"} style={{ fontSize: '50px' }}>
+                {role === 'admin' ? '🛡️' : '👤'}
               </div>
-              <h4 className="fw-bold text-dark">Profil Siswa</h4>
+              <h4 className="fw-bold text-dark">{role === 'admin' ? 'Profil Administrator' : 'Profil Siswa'}</h4>
             </div>
 
             <div className="row g-3">
@@ -129,9 +150,16 @@ function Profil() {
           </div>
         </div>
         
-        <p className="text-center mt-3 text-muted small">
-          *Data ini dikunci. Hubungi operator jika ada kesalahan data.
-        </p>
+        {/* Pesan Tambahan khusus Admin atau Siswa */}
+        {role === 'admin' ? (
+          <div className="alert alert-warning mt-4 text-center small border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+            <strong>Mode Admin:</strong> Anda melihat tampilan profil sistem. Data siswa hanya dapat diubah melalui menu <strong>Admin Panel</strong>.
+          </div>
+        ) : (
+          <p className="text-center mt-3 text-muted small">
+            *Data ini dikunci. Hubungi operator jika ada kesalahan data.
+          </p>
+        )}
       </div>
     </div>
   );

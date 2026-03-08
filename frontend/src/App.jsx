@@ -8,10 +8,6 @@ import KartuTes from './pages/KartuTes';
 import DataNilai from './pages/DataNilai';
 import Admin from './pages/Admin';
 
-
-// Di dalam <Routes>
-<Route path="/admin" element={<Admin />} />
-
 function App() {
   return (
     <Router>
