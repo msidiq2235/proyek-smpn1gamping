@@ -15,11 +15,11 @@ CREATE TABLE nilai_ujian (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nis VARCHAR(20),
     mapel VARCHAR(50),
-    wu FLOAT DEFAULT 0,
-    pp1 FLOAT DEFAULT 0,
-    pp2 FLOAT DEFAULT 0,
-    pp3 FLOAT DEFAULT 0,
-    pp4 FLOAT DEFAULT 0,
+    latihan1 FLOAT DEFAULT 0,
+    latihan2 FLOAT DEFAULT 0,
+    latihan3 FLOAT DEFAULT 0,
+    latihan4 FLOAT DEFAULT 0,
+    latihan5 FLOAT DEFAULT 0,
     FOREIGN KEY (nis) REFERENCES siswa(nis) ON DELETE CASCADE,
     UNIQUE KEY nis_mapel (nis, mapel) -- Agar fitur ON DUPLICATE KEY UPDATE bekerja
 );
