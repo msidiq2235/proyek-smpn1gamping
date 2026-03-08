@@ -212,8 +212,6 @@ function DataNilai() {
             <b>NIS :</b> {profil.nis}
             &nbsp;&nbsp; | &nbsp;&nbsp;
             <b>Kelas :</b> {profil.rombel}
-            &nbsp;&nbsp; | &nbsp;&nbsp;
-            <b>Asal Sekolah :</b> {profil.asal_sekolah}
           </div>
 
           {/* TABEL */}
