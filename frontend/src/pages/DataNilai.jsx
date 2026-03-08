@@ -41,20 +41,20 @@ function DataNilai() {
   const chartSiswa = {
     labels: dataMapel.map(d => d.mapel),
     datasets: [
-      { label: 'WU TKA', backgroundColor: '#dc3545', data: dataMapel.map(d => parseFloat(d.wu || 0)) },
-      { label: 'PP1', backgroundColor: '#0d6efd', data: dataMapel.map(d => parseFloat(d.pp1 || 0)) },
-      { label: 'PP2', backgroundColor: '#212529', data: dataMapel.map(d => parseFloat(d.pp2 || 0)) },
-      { label: 'PP3', backgroundColor: '#ffc107', data: dataMapel.map(d => parseFloat(d.pp3 || 0)) },
-      { label: 'PP4', backgroundColor: '#198754', data: dataMapel.map(d => parseFloat(d.pp4 || 0)) }
+      { label: 'latihan1', backgroundColor: '#dc3545', data: dataMapel.map(d => parseFloat(d.latihan1 || 0)) },
+      { label: 'latihan2', backgroundColor: '#0d6efd', data: dataMapel.map(d => parseFloat(d.latihan2 || 0)) },
+      { label: 'latihan3', backgroundColor: '#212529', data: dataMapel.map(d => parseFloat(d.latihan3 || 0)) },
+      { label: 'latihan4', backgroundColor: '#ffc107', data: dataMapel.map(d => parseFloat(d.latihan4 || 0)) },
+      { label: 'latihan5', backgroundColor: '#198754', data: dataMapel.map(d => parseFloat(d.latihan5 || 0)) }
     ]
   };
 
   const chartPerbandingan = {
-    labels: ['WU TKA', 'PP1', 'PP2', 'PP3', 'PP4'],
+    labels: ['latihan1', 'latihan2', 'latihan3', 'latihan4', 'latihan5'],
     datasets: rataSekolah.map((item, index) => ({
       label: item.mapel,
       backgroundColor: ['#dc3545', '#0d6efd', '#212529', '#ffc107', '#198754', '#6f42c1', '#fd7e14'][index % 7],
-      data: [parseFloat(item.wu || 0), parseFloat(item.pp1 || 0), parseFloat(item.pp2 || 0), parseFloat(item.pp3 || 0), parseFloat(item.pp4 || 0)]
+      data: [parseFloat(item.latihan1 || 0), parseFloat(item.latihan2 || 0), parseFloat(item.latihan3 || 0), parseFloat(item.latihan4 || 0), parseFloat(item.latihan5 || 0)]
     }))
   };
 
@@ -128,11 +128,11 @@ function DataNilai() {
                   <th colSpan="5">Nilai Evaluasi Tahunan</th>
                 </tr>
                 <tr className="small fw-bold">
-                  <th style={{width: '60px'}}>WU</th>
-                  <th style={{width: '60px'}}>PP1</th>
-                  <th style={{width: '60px'}}>PP2</th>
-                  <th style={{width: '60px'}}>PP3</th>
-                  <th style={{width: '60px'}}>PP4</th>
+                  <th style={{width: '60px'}}>latihan1</th>
+                  <th style={{width: '60px'}}>latihan2</th>
+                  <th style={{width: '60px'}}>latihan3</th>
+                  <th style={{width: '60px'}}>latihan4</th>
+                  <th style={{width: '60px'}}>latihan5</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,20 +140,20 @@ function DataNilai() {
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td className="text-start fw-medium">{item.mapel}</td>
-                    <td>{parseFloat(item.wu || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.pp1 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.pp2 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.pp3 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.pp4 || 0).toFixed(1)}</td>
+                    <td>{parseFloat(item.latihan1 || 0).toFixed(1)}</td>
+                    <td>{parseFloat(item.latihan2 || 0).toFixed(1)}</td>
+                    <td>{parseFloat(item.latihan3 || 0).toFixed(1)}</td>
+                    <td>{parseFloat(item.latihan4 || 0).toFixed(1)}</td>
+                    <td>{parseFloat(item.latihan5 || 0).toFixed(1)}</td>
                   </tr>
                 ))}
                 <tr className="fw-bold bg-primary bg-opacity-10 text-primary">
                   <td colSpan="2" className="text-end">RATA-RATA PRIBADI</td>
-                  <td>{hitungRerata(dataMapel, 'wu').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'pp1').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'pp2').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'pp3').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'pp4').toFixed(1)}</td>
+                  <td>{hitungRerata(dataMapel, 'latihan1').toFixed(1)}</td>
+                  <td>{hitungRerata(dataMapel, 'latihan2').toFixed(1)}</td>
+                  <td>{hitungRerata(dataMapel, 'latihan3').toFixed(1)}</td>
+                  <td>{hitungRerata(dataMapel, 'latihan4').toFixed(1)}</td>
+                  <td>{hitungRerata(dataMapel, 'latihan5').toFixed(1)}</td>
                 </tr>
               </tbody>
             </table>

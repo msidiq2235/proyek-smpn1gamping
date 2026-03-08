@@ -61,24 +61,24 @@ app.post('/api/siswa', (req, res) => {
 
 // 4. API Simpan/Update Nilai (Hanya update kolom yang dikirim agar tidak menimpa nilai lain)
 app.post('/api/nilai', (req, res) => {
-    const { nis, mapel, wu, pp1, pp2, pp3, pp4 } = req.body;
+    const { nis, mapel, latihan1, latihan2, latihan3, latihan4, latihan5 } = req.body;
     
     // Query sakti: Jika data sudah ada, update kolom yang dikirim. 
     // Jika kolom tidak dikirim (null), tetap gunakan nilai lama (IFNULL).
     const sql = `
-        INSERT INTO nilai_ujian (nis, mapel, wu, pp1, pp2, pp3, pp4)
+        INSERT INTO nilai_ujian (nis, mapel, latihan1, latihan2, latihan3, latihan4, latihan5)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
-        wu = IFNULL(?, wu),
-        pp1 = IFNULL(?, pp1),
-        pp2 = IFNULL(?, pp2),
-        pp3 = IFNULL(?, pp3),
-        pp4 = IFNULL(?, pp4)
+        latihan1 = IFNULL(?, latihan1),
+        latihan2 = IFNULL(?, latihan2),
+        latihan3 = IFNULL(?, latihan3),
+        latihan4 = IFNULL(?, latihan4),
+        latihan5 = IFNULL(?, latihan5)
     `;
 
     const values = [
-        nis, mapel, wu || null, pp1 || null, pp2 || null, pp3 || null, pp4 || null,
-        wu || null, pp1 || null, pp2 || null, pp3 || null, pp4 || null
+        nis, mapel, latihan1 || null, latihan2 || null, latihan3 || null, latihan4 || null, latihan5 || null,
+        latihan1 || null, latihan2 || null, latihan3 || null, latihan4 || null, latihan5 || null
     ];
 
     db.query(sql, values, (err, result) => {
@@ -137,16 +137,16 @@ app.delete('/api/siswa/:nis', (req, res) => {
     });
 });
 
-// 9. API Rata-rata Sekolah (DITAMBAHKAN PP4)
+// 9. API Rata-rata Sekolah (DITAMBAHKAN latihan5)
 app.get('/api/rata_sekolah', (req, res) => {
     const sql = `
         SELECT 
             mapel, 
-            ROUND(AVG(NULLIF(wu, 0)), 1) as wu, 
-            ROUND(AVG(NULLIF(pp1, 0)), 1) as pp1, 
-            ROUND(AVG(NULLIF(pp2, 0)), 1) as pp2, 
-            ROUND(AVG(NULLIF(pp3, 0)), 1) as pp3, 
-            ROUND(AVG(NULLIF(pp4, 0)), 1) as pp4 
+            ROUND(AVG(NULLIF(latihan1, 0)), 1) as latihan1, 
+            ROUND(AVG(NULLIF(latihan2, 0)), 1) as latihan2, 
+            ROUND(AVG(NULLIF(latihan3, 0)), 1) as latihan3, 
+            ROUND(AVG(NULLIF(latihan4, 0)), 1) as latihan4, 
+            ROUND(AVG(NULLIF(latihan5, 0)), 1) as latihan5 
         FROM nilai_ujian 
         GROUP BY mapel
     `;

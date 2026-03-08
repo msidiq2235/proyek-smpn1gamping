@@ -16,7 +16,7 @@ function Admin() {
     nis: '', nama: '', password: '', rombel: '', asal_sekolah: ''
   });
 
-  const [kategori, setKategori] = useState('pp1');
+  const [kategori, setKategori] = useState('latihan2');
   const [inputKolektif, setInputKolektif] = useState({
     nis: '', indo: '', mtk: '', inggris: '', ipa: ''
   });
@@ -127,7 +127,7 @@ const muatDaftarSiswa = async () => {
   const simpanNilaiKolektif = async (e) => {
   e.preventDefault();
   try {
-    // Kita hanya mengirim kategori yang sedang dipilih (misal: pp1 saja atau pp2 saja)
+    // Kita hanya mengirim kategori yang sedang dipilih (misal: latihan2 saja atau latihan3 saja)
     const payload = [
       { nis: inputKolektif.nis, mapel: 'Bahasa Indonesia', [kategori]: inputKolektif.indo },
       { nis: inputKolektif.nis, mapel: 'Matematika', [kategori]: inputKolektif.mtk },
@@ -240,7 +240,7 @@ const muatDaftarSiswa = async () => {
           <div className="col-md-7">
             <div className="card p-4 border-0 shadow-sm" style={{borderRadius: '15px'}}>
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <h5 className="fw-bold mb-0">📊 Input Nilai Kolektif</h5>
+                <h5 className="fw-bold mb-0">📊 Input Nilai </h5>
                 <div>
                   <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="d-none" id="importExcel" />
                   <label htmlFor="importExcel" className="btn btn-success btn-sm fw-bold">📂 Import Excel</label>
@@ -260,11 +260,11 @@ const muatDaftarSiswa = async () => {
                   </div>
                   <div className="col-4">
                     <select className="form-select fw-bold text-primary" value={kategori} onChange={(e) => setKategori(e.target.value)}>
-                      <option value="wu">WU TKA</option>
-                      <option value="pp1">PP1</option>
-                      <option value="pp2">PP2</option>
-                      <option value="pp3">PP3</option>
-                      <option value="pp4">PP4</option>
+                      <option value="latihan1">Latihan 1</option>
+                      <option value="latihan2">Latihan 2</option>
+                      <option value="latihan3">Latihan 3</option>
+                      <option value="latihan4">Latihan 4</option>
+                      <option value="latihan5">Latihan 5</option>
                     </select>
                   </div>
                 </div>
@@ -302,7 +302,7 @@ const muatDaftarSiswa = async () => {
         <div className="card border-0 shadow-sm p-4" style={{ borderRadius: '20px' }}>
   <div className="d-flex justify-content-between align-items-center mb-4">
     <h5 className="fw-bold mb-0">📋 Rekap Nilai Siswa ({kategori.toUpperCase()})</h5>
-    <div className="badge bg-primary px-3 py-2">Mode: Latihan {kategori.toUpperCase()}</div>
+    <div className="badge bg-primary px-3 py-2">Bagian {kategori.toUpperCase()}</div>
   </div>
   
   <div className="table-responsive">
@@ -321,24 +321,44 @@ const muatDaftarSiswa = async () => {
       </thead>
       <tbody>
   {daftarSiswa.map((s) => {
-  const getSkor = (mapel) => {
-    // Cari di dalam daftar_nilai milik siswa ini
-    const data = s.daftar_nilai.find(n => n.mapel === mapel);
-    return data && data[kategori] !== null ? data[kategori] : '-';
-  };
-return (
-    <tr key={s.nis}>
-      <td>{s.nis}</td>
-      <td>{s.nama}</td>
-      <td>{s.rombel}</td>
-      <td className="text-center fw-bold">{getSkor('Bahasa Indonesia')}</td>
-      <td className="text-center fw-bold">{getSkor('Matematika')}</td>
-      <td className="text-center fw-bold">{getSkor('Bahasa Inggris')}</td>
-      <td className="text-center fw-bold">{getSkor('IPA')}</td>
-      {/* ... tombol aksi */}
-    </tr>
-  );
-})}
+    // Fungsi untuk mengambil nilai berdasarkan mapel dan kategori (latihan1-5)
+    const getSkor = (mapel) => {
+      const data = s.daftar_nilai.find(n => n.mapel === mapel);
+      return data && data[kategori] !== null ? data[kategori] : '-';
+    };
+
+    return (
+      <tr key={s.nis}>
+        <td>{s.nis}</td>
+        <td className="fw-bold">{s.nama}</td>
+        <td><span className="badge bg-secondary">{s.rombel}</span></td>
+        <td className="text-center fw-bold text-primary">{getSkor('Bahasa Indonesia')}</td>
+        <td className="text-center fw-bold text-primary">{getSkor('Matematika')}</td>
+        <td className="text-center fw-bold text-primary">{getSkor('Bahasa Inggris')}</td>
+        <td className="text-center fw-bold text-primary">{getSkor('IPA')}</td>
+        
+        {/* BAGIAN AKSI YANG TADI HILANG */}
+        <td className="text-center">
+          <div className="btn-group">
+            <button 
+              className="btn btn-sm btn-outline-warning" 
+              onClick={() => editSiswa(s)}
+              title="Edit Profil Siswa"
+            >
+              ✏️
+            </button>
+            <button 
+              className="btn btn-sm btn-outline-danger" 
+              onClick={() => hapusSiswa(s.nis)}
+              title="Hapus Siswa"
+            >
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
 </tbody>
     </table>
   </div>
