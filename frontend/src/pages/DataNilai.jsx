@@ -5,195 +5,321 @@ import axios from 'axios';
 import 'chart.js/auto';
 
 function DataNilai() {
+
   const [dataMapel, setDataMapel] = useState([]);
-  const [profil, setProfil] = useState({ nama: '', nis: '', rombel: '', asal_sekolah: '' });
+  const [profil, setProfil] = useState({
+    nama: '',
+    nis: '',
+    rombel: '',
+    asal_sekolah: ''
+  });
   const [rataSekolah, setRataSekolah] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const nis = localStorage.getItem('nis');
 
   useEffect(() => {
+
     const fetchData = async () => {
+
       try {
+
         const [resSiswa, resNilai, resRata] = await Promise.all([
           axios.get(`http://localhost:5000/api/siswa/${nis}`),
           axios.get(`http://localhost:5000/api/nilai/${nis}`),
           axios.get(`http://localhost:5000/api/rata_sekolah`)
         ]);
-        if (resSiswa.data && resSiswa.data.profil) setProfil(resSiswa.data.profil);
+
+        if (resSiswa.data?.profil) setProfil(resSiswa.data.profil);
         if (Array.isArray(resNilai.data)) setDataMapel(resNilai.data);
         if (Array.isArray(resRata.data)) setRataSekolah(resRata.data);
+
       } catch (err) {
-        console.error("Gagal memuat data:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
+
     };
+
     if (nis) fetchData();
+
   }, [nis]);
 
   const hitungRerata = (arr, key) => {
-    if (!arr || arr.length === 0) return 0;
-    const total = arr.reduce((acc, curr) => acc + (parseFloat(curr[key]) || 0), 0);
-    return (total / arr.length);
+    if (!arr.length) return 0;
+    const total = arr.reduce((a, b) => a + (parseFloat(b[key]) || 0), 0);
+    return total / arr.length;
   };
 
   const chartSiswa = {
     labels: dataMapel.map(d => d.mapel),
     datasets: [
-      { label: 'latihan1', backgroundColor: '#dc3545', data: dataMapel.map(d => parseFloat(d.latihan1 || 0)) },
-      { label: 'latihan2', backgroundColor: '#0d6efd', data: dataMapel.map(d => parseFloat(d.latihan2 || 0)) },
-      { label: 'latihan3', backgroundColor: '#212529', data: dataMapel.map(d => parseFloat(d.latihan3 || 0)) },
-      { label: 'latihan4', backgroundColor: '#ffc107', data: dataMapel.map(d => parseFloat(d.latihan4 || 0)) },
-      { label: 'latihan5', backgroundColor: '#198754', data: dataMapel.map(d => parseFloat(d.latihan5 || 0)) }
+      { label: 'Lat1', backgroundColor: '#dc3545', data: dataMapel.map(d => d.latihan1) },
+      { label: 'Lat2', backgroundColor: '#0d6efd', data: dataMapel.map(d => d.latihan2) },
+      { label: 'Lat3', backgroundColor: '#212529', data: dataMapel.map(d => d.latihan3) },
+      { label: 'Lat4', backgroundColor: '#ffc107', data: dataMapel.map(d => d.latihan4) },
+      { label: 'Lat5', backgroundColor: '#198754', data: dataMapel.map(d => d.latihan5) }
     ]
   };
 
   const chartPerbandingan = {
-    labels: ['latihan1', 'latihan2', 'latihan3', 'latihan4', 'latihan5'],
+    labels: ['Lat1', 'Lat2', 'Lat3', 'Lat4', 'Lat5'],
     datasets: rataSekolah.map((item, index) => ({
       label: item.mapel,
-      backgroundColor: ['#dc3545', '#0d6efd', '#212529', '#ffc107', '#198754', '#6f42c1', '#fd7e14'][index % 7],
-      data: [parseFloat(item.latihan1 || 0), parseFloat(item.latihan2 || 0), parseFloat(item.latihan3 || 0), parseFloat(item.latihan4 || 0), parseFloat(item.latihan5 || 0)]
+      backgroundColor: [
+        '#dc3545',
+        '#0d6efd',
+        '#212529',
+        '#ffc107',
+        '#198754',
+        '#6f42c1',
+        '#fd7e14'
+      ][index % 7],
+      data: [
+        item.latihan1,
+        item.latihan2,
+        item.latihan3,
+        item.latihan4,
+        item.latihan5
+      ]
     }))
   };
 
-  if (loading) return <div className="text-center p-5 fw-bold">Memuat Laporan Nilai...</div>;
+  if (loading) {
+    return (
+      <div className="text-center p-5 fw-bold">
+        Memuat laporan...
+      </div>
+    );
+  }
 
   return (
-    <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '30px' }}>
-      <style>
-        {`
-          @media print {
-            @page { size: A4 portrait; margin: 10mm; }
-            body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; }
-            .d-print-none { display: none !important; }
-            .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
-            .card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
-            
-            /* Penyesuaian Tabel agar simetris */
-            table { font-size: 11px !important; width: 100% !important; border-collapse: collapse !important; }
-            th, td { border: 1px solid #dee2e6 !important; padding: 5px !important; }
 
-            /* Grafik Vertikal Simetris */
-            .row { display: block !important; width: 100% !important; margin: 0 !important; }
-            .col-md-6 { 
-              width: 100% !important; 
-              max-width: 100% !important; 
-              padding: 0 !important; 
-              margin-bottom: 20px !important; 
-              display: block !important;
-            }
-            
-            .chart-box { border: 1px solid #dee2e6 !important; padding: 10px !important; border-radius: 10px !important; }
-            .chart-container { height: 230px !important; width: 100% !important; }
-            
-            body { zoom: 98%; }
+    <div style={{ background: '#f4f7f6', minHeight: '100vh', paddingBottom: '30px' }}>
+
+      <style>{`
+        @media print {
+
+          @page {
+            size: A4 portrait;
+            margin: 6mm;
           }
-        `}
-      </style>
 
-      {/* Navbar */}
-      <nav className="navbar navbar-expand-lg bg-primary shadow-sm py-3 mb-4 d-print-none">
+          body {
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          .d-print-none {
+            display: none !important;
+          }
+
+          .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+          }
+
+          .card {
+            border: none !important;
+            box-shadow: none !important;
+          }
+
+          table {
+            width: 100%;
+            font-size: 11px;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+          }
+
+          th, td {
+            padding: 4px;
+            white-space: nowrap;
+          }
+
+          .chart-container {
+            height: 260px !important;
+          }
+
+        }
+      `}</style>
+
+      {/* NAVBAR */}
+
+      <nav className="navbar bg-primary mb-4 py-3 d-print-none">
+
         <div className="container px-4">
-          <span className="navbar-brand fw-bold text-white">🎓 Portal Akademik</span>
+
+          <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
+            <img src="/logo_smpn1gmp.png" alt="logo" style={{ width: '32px' }} />
+            Portal Akademik
+          </span>
+
           <div className="ms-auto d-flex gap-2">
-            <button onClick={() => window.print()} className="btn btn-success btn-sm shadow-sm fw-bold px-3 border border-light">🖨️ Cetak Laporan</button>
-            <Link to="/beranda" className="btn btn-light text-primary btn-sm shadow-sm fw-bold px-3">⬅ Beranda</Link>
+
+            <button
+              onClick={() => window.print()}
+              className="btn btn-success btn-sm fw-bold"
+            >
+              🖨️ Cetak
+            </button>
+
+            <Link
+              to="/beranda"
+              className="btn btn-light btn-sm fw-bold text-primary"
+            >
+              ⬅ Beranda
+            </Link>
+
           </div>
+
         </div>
+
       </nav>
 
-      <div className="container px-4" style={{ maxWidth: '900px' }}>
-        <div className="card border-0 shadow-sm p-4 p-md-5 bg-white" style={{ borderRadius: '20px' }}>
-          
-          {/* Header Profil Simetris */}
-          <div className="d-flex justify-content-between align-items-end mb-4 border-bottom pb-3">
-            <div>
-              <h4 className="fw-bold text-dark mb-1 text-uppercase">{profil.nama || 'Siswa'}</h4>
-              <p className="text-muted small mb-0">NIS: {profil.nis} | Kelas: {profil.rombel} | {profil.asal_sekolah}</p>
-            </div>
-            <div className="text-end">
-              <h6 className="fw-bold text-primary mb-0">LAPORAN HASIL EVALUASI</h6>
-            </div>
+      <div className="container" style={{ maxWidth: '900px' }}>
+
+        <div className="card bg-white shadow-sm p-4">
+
+          {/* HEADER SEKOLAH */}
+
+          <div className="text-center border-bottom pb-3 mb-3">
+
+            <img src="/logo_smpn1gmp.png" style={{ width: '60px' }} alt="logo" />
+
+            <h5 className="fw-bold mt-2 mb-0">
+              SMP NEGERI 1 GAMPING
+            </h5>
+
+            <small className="text-muted">
+              YOGATAMA
+            </small>
+
+            <hr className="mt-2 mb-2" />
+
+            <h6 className="fw-bold text-uppercase">
+              Laporan Hasil Evaluasi
+            </h6>
+
           </div>
 
-          {/* Tabel Nilai */}
-          <div className="mb-5">
-            <table className="table table-bordered text-center align-middle mb-0">
-              <thead className="table-light">
-                <tr className="small text-uppercase fw-bold">
-                  <th rowSpan="2" style={{width: '40px'}}>No</th>
-                  <th rowSpan="2" className="text-start">Mata Pelajaran</th>
-                  <th colSpan="5">Nilai Evaluasi Tahunan</th>
-                </tr>
-                <tr className="small fw-bold">
-                  <th style={{width: '60px'}}>latihan1</th>
-                  <th style={{width: '60px'}}>latihan2</th>
-                  <th style={{width: '60px'}}>latihan3</th>
-                  <th style={{width: '60px'}}>latihan4</th>
-                  <th style={{width: '60px'}}>latihan5</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dataMapel.map((item, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td className="text-start fw-medium">{item.mapel}</td>
-                    <td>{parseFloat(item.latihan1 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.latihan2 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.latihan3 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.latihan4 || 0).toFixed(1)}</td>
-                    <td>{parseFloat(item.latihan5 || 0).toFixed(1)}</td>
-                  </tr>
-                ))}
-                <tr className="fw-bold bg-primary bg-opacity-10 text-primary">
-                  <td colSpan="2" className="text-end">RATA-RATA PRIBADI</td>
-                  <td>{hitungRerata(dataMapel, 'latihan1').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'latihan2').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'latihan3').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'latihan4').toFixed(1)}</td>
-                  <td>{hitungRerata(dataMapel, 'latihan5').toFixed(1)}</td>
-                </tr>
-              </tbody>
-            </table>
+          {/* DATA SISWA */}
+
+          <div className="mb-3 small">
+            <b>Nama :</b> {profil.nama}
+            &nbsp;&nbsp; | &nbsp;&nbsp;
+            <b>NIS :</b> {profil.nis}
+            &nbsp;&nbsp; | &nbsp;&nbsp;
+            <b>Kelas :</b> {profil.rombel}
+            &nbsp;&nbsp; | &nbsp;&nbsp;
+            <b>Asal Sekolah :</b> {profil.asal_sekolah}
           </div>
 
-          {/* Grafik Atas-Bawah (Lebar Sejajar Tabel) */}
-          <div className="row">
-            <div className="col-md-6 mb-4">
-              <div className="chart-box border rounded-4 p-3 shadow-sm bg-white">
-                <h6 className="text-center mb-3 text-muted fw-bold small text-uppercase">Visualisasi Nilai Pribadi</h6>
-                <div className="chart-container" style={{ height: '240px' }}>
-                  <Bar data={chartSiswa} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } } }} />
-                </div>
-              </div>
-            </div>
+          {/* TABEL */}
 
-            <div className="col-md-6">
-              <div className="chart-box border rounded-4 p-3 shadow-sm bg-white">
-                <h6 className="text-center mb-3 text-muted fw-bold small text-uppercase">Perbandingan Rata-rata Sekolah</h6>
-                <div className="chart-container" style={{ height: '240px' }}>
-                  <Bar key={`rata-${rataSekolah.length}`} data={chartPerbandingan} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10}, usePointStyle: true } } } }} />
-                </div>
-              </div>
-            </div>
+          <table className="table table-bordered text-center align-middle small mb-4">
+
+            <thead className="table-light">
+
+              <tr>
+                <th rowSpan="2" style={{ width: '40px' }}>No</th>
+                <th rowSpan="2" className="text-start">Mata Pelajaran</th>
+                <th colSpan="5">Nilai Evaluasi Tahunan</th>
+              </tr>
+
+              <tr>
+                <th>Lat1</th>
+                <th>Lat2</th>
+                <th>Lat3</th>
+                <th>Lat4</th>
+                <th>Lat5</th>
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              {dataMapel.map((item, index) => (
+
+                <tr key={index}>
+                  <td>{index + 1}</td>
+                  <td className="text-start">{item.mapel}</td>
+                  <td>{item.latihan1}</td>
+                  <td>{item.latihan2}</td>
+                  <td>{item.latihan3}</td>
+                  <td>{item.latihan4}</td>
+                  <td>{item.latihan5}</td>
+                </tr>
+
+              ))}
+
+              <tr className="fw-bold bg-primary bg-opacity-10">
+
+                <td colSpan="2" className="text-end">
+                  RATA-RATA PRIBADI
+                </td>
+
+                <td>{hitungRerata(dataMapel, 'latihan1').toFixed(1)}</td>
+                <td>{hitungRerata(dataMapel, 'latihan2').toFixed(1)}</td>
+                <td>{hitungRerata(dataMapel, 'latihan3').toFixed(1)}</td>
+                <td>{hitungRerata(dataMapel, 'latihan4').toFixed(1)}</td>
+                <td>{hitungRerata(dataMapel, 'latihan5').toFixed(1)}</td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+          {/* GRAFIK SISWA */}
+
+          <h6 className="text-center fw-bold small">
+            Visualisasi Nilai Pribadi
+          </h6>
+
+          <div style={{ height: '245px' }} className="mb-3">
+            <Bar
+              data={chartSiswa}
+              options={{ maintainAspectRatio: false }}
+            />
           </div>
 
-          {/* Footer Laporan */}
-          <div className="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
-            <div className="small text-muted">
+          {/* GRAFIK SEKOLAH */}
+
+          <h6 className="text-center fw-bold small">
+            Perbandingan Rata-rata Sekolah
+          </h6>
+
+          <div style={{ height: '245px' }} className="mb-3">
+            <Bar
+              data={chartPerbandingan}
+              options={{ maintainAspectRatio: false }}
+            />
+          </div>
+
+          {/* FOOTER */}
+
+          <div className="mt-3 border-top pt-2 small d-flex justify-content-between">
+
+            <span>
               Portal Akademik SMPN 1 Gamping
-            </div>
-            <div className="small text-muted text-end">
-              Dicetak pada: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
+            </span>
+
+            <span>
+              Dicetak: {new Date().toLocaleDateString('id-ID')}
+            </span>
+
           </div>
 
         </div>
+
       </div>
+
     </div>
+
   );
+
 }
 
 export default DataNilai;
