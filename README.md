@@ -1,113 +1,91 @@
-# 🎓 Sistem Informasi Penilaian Siswa (Fullstack)
+# 🏫 Portal Akademik SMPN 1 Gamping
 
-Aplikasi berbasis web untuk manajemen dan visualisasi nilai evaluasi tahunan siswa . Dibangun menggunakan **React (Vite)** di sisi Frontend dan **Node.js (Express)** di sisi Backend dengan database **MySQL**.
+Portal Akademik ini adalah aplikasi web berbasis **React (Vite)** untuk antarmuka pengguna dan **PHP (XAMPP/MySQL)** untuk pengelolaan server. Aplikasi ini dirancang untuk memudahkan sekolah dalam mengelola data siswa, rekapitulasi nilai ujian secara dinamis, dan pencetakan kartu tes.
 
-## 🚀 Fitur Unggulan
-- **Dashboard Admin**: Kelola data siswa (CRUD) secara real-time.
-- **Import Excel Modern**: Input ratusan data siswa & nilai sekaligus. Sistem otomatis mendaftarkan siswa baru jika NIS belum ada di database.
-- **Grafik Interaktif**: Visualisasi nilai pribadi vs rata-rata sekolah menggunakan **Chart.js**.
-- **Cetak Laporan**: Fitur cetak rapor evaluasi yang simetris dan rapi (Format A4).
-- **Auto-Login System**: Siswa login menggunakan NIS sebagai Username dan Password default.
+## Fitur Utama
 
----
+### 👨‍💻 Panel Admin
+* **Dashboard Statistik:** Manajemen terpusat untuk operator sekolah.
+* **Manajemen Siswa (CRUD):** Tambah, Edit, dan Hapus data profil siswa.
+* **Kategori Ujian Dinamis:** Admin dapat membuat, mengubah nama, atau menghapus kategori ujian baru (misal: Latihan 1, PTS, PAS) tanpa batas. Sistem akan otomatis membuatkan kolom di database.
+* **Input Nilai Terintegrasi:** Input nilai persiswa atau import data siswa beserta nilainya sekaligus menggunakan file **Excel (.xlsx)**.
+* **Pengaturan Cetak:** Mengubah judul laporan evaluasi secara dinamis.
+* **Reset Data:** Fitur hapus semua data siswa (Kecuali Admin) untuk persiapan tahun ajaran baru.
 
-## 🛠️ Persiapan Lingkungan (Prerequisites)
-Sebelum menjalankan, pastikan laptop Anda sudah terinstal:
-- **Node.js** (Versi 18.x atau terbaru)
-- **MySQL Server** (XAMPP / Laragon / MySQL Workbench)
-- **Git** (Untuk manajemen versi)
-
----
-
-## 📥 Langkah Instalasi & Konfigurasi
-
-### 1. Kloning Repositori
-```bash
-git clone [https://github.com/msidiq2235/proyek-smpn1gamping.git](https://github.com/msidiq2235/proyek-smpn1gamping.git)
-cd proyek-smpn1gamping
-
-```
-
-### 2. Konfigurasi Database
-
-1. Jalankan MySQL (XAMPP/Laragon).
-2. Buat database baru bernama: `db_penilaian_siswa`.
-3. Import file `db_penilaian_siswa.sql` yang ada di folder utama proyek ini ke dalam database tersebut.
-
-### 3. Setup Backend (Server)
-
-1. Buka folder `backend`.
-2. Buka file `server.js` dan sesuaikan konfigurasi database:
-```javascript
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',      
-    port : 3307,        // SESUAIKAN PORT (Standar XAMPP: 3306)
-    password: '', // SESUAIKAN PASSWORD MYSQL ANDA
-    database: 'db_penilaian_siswa'
-});
-
-```
-
-
-3. Instal library & Jalankan:
-```bash
-npm install
-node server.js
-
-```
-
-
-
-### 4. Setup Frontend (Client)
-
-1. Buka folder `frontend`.
-2. Instal library & Jalankan:
-```bash
-npm install
-npm run dev
-
-```
-
-
-3. Akses aplikasi di browser: `http://localhost:5173`
+### 🎓 Panel Siswa
+* **Profil Siswa:** Menampilkan informasi biodata siswa terdaftar.
+* **Kartu Tes Peserta:** Kartu ujian siap cetak yang dilengkapi dengan sistem **QR Code** berdasarkan Nomor Induk Siswa (NIS).
+* **Data Nilai & Grafik:** Menampilkan tabel nilai ujian secara lengkap beserta visualisasi **Chart.js** untuk grafik nilai pribadi dan perbandingan rata-rata satu sekolah.
 
 ---
 
-## 📊 Spesifikasi Data & Format Excel
+## 🛠️ Teknologi yang Digunakan
 
-Untuk fitur **Import Excel**, gunakan format header kolom sebagai berikut (Huruf Kecil Semua):
+**Frontend:**
+* [React.js](https://reactjs.org/) (via Vite)
+* [React Router DOM](https://reactrouter.com/) (Routing)
+* [Axios](https://axios-http.com/) (HTTP Client)
+* [Bootstrap 5](https://getbootstrap.com/) (UI/CSS Framework)
+* [Chart.js](https://www.chartjs.org/) & React-Chartjs-2 (Visualisasi Data)
+* SheetJS / xlsx (Import Data Excel)
+* React-QR-Code (Generator QR)
 
-| nis | nama | rombel | asal_sekolah | indo | mtk | inggris | ipa |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1234567 | Brody Black | 9A | SMPN 1 Gamping | 85 | 80 | 90 | 88 |
-
-> **Catatan**:
-> * Kolom `indo`, `mtk`, `inggris`, `ipa` akan masuk ke kategori yang sedang Anda pilih di dropdown menu (Misal: Latihan 1).
-> * Password default siswa setelah diimport adalah **NIS** mereka sendiri.
-> 
-> 
-
----
-
-## 📁 Struktur Folder Proyek
-
-```text
-.
-├── frontend/                # React Vite Project (UI & Chart Logic)
-├── backend/                 # Node.js Express (REST API & Database)
-├── db_penilaian_siswa.sql    # Backup Database (Wajib di-import)
-├── .gitignore               # Daftar file yang diabaikan Git (node_modules)
-└── README.md                # Dokumentasi Proyek
-
-```
+**Backend:**
+* PHP 8+ (Native / Procedural)
+* MySQL / MariaDB
+* XAMPP Server
 
 ---
 
-## 🛠️ Troubleshooting (Jika Terjadi Masalah)
+## ⚙️ Panduan Instalasi Lengkap (Local Development)
 
-* **Error 404 (Not Found)**: Pastikan semua endpoint API di `server.js` sudah sesuai dengan `axios.get` di frontend.
-* **Gagal Koneksi Database**: Cek port MySQL (3306 atau 3307) dan password di `server.js`.
-* **Node Modules Error**: Jika pindah laptop, hapus folder `node_modules` yang lama lalu jalankan `npm install` kembali.
+Ikuti langkah-langkah di bawah ini untuk menjalankan proyek di komputer/laptop Anda dari nol.
+
+### Tahap 1: Persiapan Aplikasi Wajib (Prerequisites)
+Pastikan komputer Anda sudah terinstal aplikasi berikut:
+1. **[XAMPP](https://www.apachefriends.org/index.html)** (Sebagai server lokal untuk PHP dan MySQL).
+2. **[Node.js](https://nodejs.org/)** (Untuk menjalankan *environment* React).
+
+### Tahap 2: Pemasangan Backend & Database (XAMPP)
+1. Buka aplikasi **XAMPP Control Panel**, lalu klik **Start** pada modul `Apache` dan `MySQL`.
+2. Buka browser dan akses `http://localhost/phpmyadmin`.
+3. Buat database baru dengan nama **`db_penilaian_siswa`**.
+4. Masuk ke menu **SQL**, lalu eksekusi (jalankan) *query* SQL untuk membuat struktur tabel yang dibutuhkan.
+5. Buka folder instalasi XAMPP Anda (biasanya `C:\xampp\htdocs\`).
+6. Buat folder untuk proyek ini (misal: `proyek-smpn1gamping`), dan di dalamnya buat folder **`portal-api`**.
+7. Pindahkan seluruh **18 file `.php`** (seperti `config.php`, `login.php`, dll) ke dalam folder `portal-api` tersebut.
+
+### Tahap 3: Pemasangan Frontend (React)
+1. Buka folder proyek Frontend ini di Visual Studio Code (VS Code).
+2. Pastikan file konfigurasi API di `src/apiConfig.js` sudah mengarah ke folder XAMPP Anda. Contoh:
+   ```javascript
+   export const API_BASE_URL = "http://localhost/proyek-smpn1gamping/portal-api";
+   ```
+3. Buka terminal di VS Code, lalu instal semua dependensi yang dibutuhkan:
+   ```bash
+   npm install
+   ```
+
+### Tahap 4: Menjalankan Aplikasi
+1. Pastikan XAMPP (Apache & MySQL) masih dalam keadaan menyala.
+2. Pada terminal VS Code, jalankan server pengembangan:
+   ```bash
+   npm run dev
+   ```
+3. Aplikasi akan terbuka di browser secara otomatis pada `http://localhost:5173`.
 
 ---
+
+## 🔐 Akun Akses Default
+
+Gunakan kredensial berikut untuk login pertama kali ke dalam sistem (Panel Admin):
+
+* **User ID (NIS):** `admin`
+* **Password:** `admin123`
+
+*(Catatan: Anda dapat menambahkan akun siswa secara massal menggunakan fitur Import Excel di dalam Panel Admin).*
+
+---
+
+## 📄 Lisensi
+Proyek ini dibuat untuk keperluan akademik, tugas akhir, dan edukasi.
