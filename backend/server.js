@@ -170,7 +170,8 @@ app.get('/api/nilai/:nis', (req, res) => {
 
 // Ambil Semua Kategori
 app.get('/api/kategori', (req, res) => {
-    db.query("SELECT * FROM kategori_nilai", (err, result) => {
+    // Tambahkan ORDER BY dibuat_pada ASC agar yang lama di atas, yang baru di bawah
+    db.query("SELECT * FROM kategori_nilai ORDER BY dibuat_pada ASC, id_kategori ASC", (err, result) => {
         if (err) return res.status(500).json(err);
         res.json(result);
     });
