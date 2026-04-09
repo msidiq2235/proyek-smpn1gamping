@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from "xlsx";
+import { API_BASE_URL } from '../apiConfig'; // Pastikan import ini ada
 
 function Admin() {
   const navigate = useNavigate();
@@ -31,25 +32,28 @@ function Admin() {
   });
 
   useEffect(() => {
-    if (role !== 'admin') navigate('/beranda');
+    if (role !== 'admin' && localStorage.getItem('nis') !== 'admin') navigate('/beranda');
     muatDaftarSiswa();
     muatKategori();
-    muatJudul(); // Panggil judul laporan saat halaman dimuat
+    muatJudul();
   }, [role, navigate]);
 
   // ==========================================
-  // FUNGSI MEMUAT DATA
+  // FUNGSI MEMUAT DATA (Diubah ke PHP)
   // ==========================================
   const muatDaftarSiswa = async () => {
     try {
       const [resSiswa, resNilai] = await Promise.all([
-        axios.get('http://localhost:5000/api/siswa_all'),
-        axios.get('http://localhost:5000/api/nilai_all')
+        axios.get(`${API_BASE_URL}/get_all_siswa.php`),
+        axios.get(`${API_BASE_URL}/get_all_nilai.php`)
       ]);
 
-      const dataGabungan = resSiswa.data.map(siswa => ({
+      const dataSiswa = Array.isArray(resSiswa.data) ? resSiswa.data : [];
+      const dataNilai = Array.isArray(resNilai.data) ? resNilai.data : [];
+
+      const dataGabungan = dataSiswa.map(siswa => ({
         ...siswa,
-        daftar_nilai: resNilai.data.filter(n => n.nis === siswa.nis)
+        daftar_nilai: dataNilai.filter(n => n.nis === siswa.nis)
       }));
 
       setDaftarSiswa(dataGabungan);
@@ -58,7 +62,7 @@ function Admin() {
 
   const muatKategori = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/kategori');
+      const res = await axios.get(`${API_BASE_URL}/get_kategori.php`);
       setDaftarKategori(res.data);
       setKategoriEditData(res.data); 
       if(res.data.length > 0 && !kategori) {
@@ -69,18 +73,19 @@ function Admin() {
 
   const muatJudul = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/judul');
+      const res = await axios.get(`${API_BASE_URL}/get_judul.php`);
       if (res.data?.judul) setJudulLaporan(res.data.judul);
     } catch (err) { console.error("Gagal memuat judul:", err); }
   };
 
   // ==========================================
-  // FUNGSI KATEGORI & JUDUL (PENGATURAN)
+  // FUNGSI KATEGORI & JUDUL (Diubah ke PHP)
   // ==========================================
   const simpanKategori = async () => {
     try {
       for (const item of kategoriEditData) {
-        await axios.put(`http://localhost:5000/api/kategori/${item.id_kategori}`, {
+        await axios.post(`${API_BASE_URL}/update_kategori.php`, {
+          id_kategori: item.id_kategori,
           nama_kategori: item.nama_kategori
         });
       }
@@ -93,7 +98,7 @@ function Admin() {
     if (!kategoriBaru) return;
     try {
       setPesan({ tipe: 'info', isi: '⏳ Sedang membuat kolom di database...' });
-      await axios.post('http://localhost:5000/api/kategori', { nama_kategori: kategoriBaru });
+      await axios.post(`${API_BASE_URL}/tambah_kategori.php`, { nama_kategori: kategoriBaru });
       setKategoriBaru('');
       muatKategori();
       setPesan({ tipe: 'success', isi: `Kategori "${kategoriBaru}" berhasil ditambahkan!` });
@@ -104,7 +109,7 @@ function Admin() {
     if (window.confirm(`⚠️ Yakin ingin menghapus kategori "${nama}"? SEMUA NILAI SISWA DI KATEGORI INI AKAN HILANG PERMANEN!`)) {
       try {
         setPesan({ tipe: 'info', isi: '⏳ Sedang menghapus kolom dari database...' });
-        await axios.delete(`http://localhost:5000/api/kategori/${id}`);
+        await axios.post(`${API_BASE_URL}/hapus_kategori.php`, { id_kategori: id });
         if (kategori === id) setKategori(''); 
         muatKategori();
         muatDaftarSiswa(); 
@@ -115,22 +120,22 @@ function Admin() {
 
   const simpanJudul = async () => {
     try {
-      await axios.put('http://localhost:5000/api/judul', { judul: judulLaporan });
+      await axios.post(`${API_BASE_URL}/update_judul.php`, { judul: judulLaporan });
       setPesan({ tipe: 'success', isi: 'Judul laporan berhasil diperbarui!' });
     } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal memperbarui judul.' }); }
   };
 
   // ==========================================
-  // FUNGSI SISWA & NILAI
+  // FUNGSI SISWA & NILAI (Diubah ke PHP)
   // ==========================================
   const handleCariKolektif = async (nisInput, kategoriInput) => {
     const cleanNIS = nisInput.trim();
     if (cleanNIS.length > 2) {
       try {
-        const resSiswa = await axios.get(`http://localhost:5000/api/siswa/${cleanNIS}`);
+        const resSiswa = await axios.get(`${API_BASE_URL}/get_profil.php?nis=${cleanNIS}`);
         if (resSiswa.data && resSiswa.data.profil) {
           setNamaTerdeteksi(resSiswa.data.profil.nama);
-          const resNilai = await axios.get(`http://localhost:5000/api/nilai/${cleanNIS}`).catch(() => ({ data: [] }));
+          const resNilai = await axios.get(`${API_BASE_URL}/get_nilai.php?nis=${cleanNIS}`).catch(() => ({ data: [] }));
           const dataNilai = Array.isArray(resNilai.data) ? resNilai.data : [];
           const getVal = (m) => dataNilai.find(n => n.mapel === m)?.[kategoriInput] || '';
 
@@ -151,10 +156,10 @@ function Admin() {
     e.preventDefault();
     try {
       if (isEditMode) {
-        await axios.put(`http://localhost:5000/api/siswa/${siswa.nis}`, siswa);
+        await axios.post(`${API_BASE_URL}/update_siswa.php`, siswa);
         setPesan({ tipe: 'success', isi: 'Data Siswa Berhasil Diperbarui!' });
       } else {
-        await axios.post('http://localhost:5000/api/siswa', siswa);
+        await axios.post(`${API_BASE_URL}/tambah_siswa.php`, siswa);
         setPesan({ tipe: 'success', isi: 'Data Siswa Berhasil Disimpan!' });
       }
       setSiswa({ nis: '', nama: '', password: '', rombel: '', asal_sekolah: '' });
@@ -172,7 +177,7 @@ function Admin() {
   const hapusSiswa = async (nis) => {
     if (window.confirm("Hapus siswa ini? Semua nilai siswa ini juga akan hilang.")) {
       try {
-        await axios.delete(`http://localhost:5000/api/siswa/${nis}`);
+        await axios.get(`${API_BASE_URL}/hapus_siswa.php?nis=${nis}`);
         setPesan({ tipe: 'warning', isi: 'Siswa berhasil dihapus.' });
         muatDaftarSiswa();
       } catch (err) { console.error(err); }
@@ -184,7 +189,7 @@ function Admin() {
     if (konfirmasi === 'HAPUS') {
       try {
         setPesan({ tipe: 'info', isi: 'Memproses penghapusan data masal...' });
-        await axios.delete('http://localhost:5000/api/siswa_all');
+        await axios.get(`${API_BASE_URL}/hapus_semua_siswa.php`);
         setPesan({ tipe: 'danger', isi: 'Semua data siswa berhasil dikosongkan untuk tahun ajaran baru.' });
         muatDaftarSiswa(); 
       } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menghapus semua data.' }); }
@@ -204,7 +209,7 @@ function Admin() {
       ];
 
       for (const data of payload) {
-        await axios.post('http://localhost:5000/api/nilai', data);
+        await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, data);
       }
 
       const namaKat = daftarKategori.find(k => k.id_kategori === kategori)?.nama_kategori || kategori;
@@ -229,7 +234,7 @@ function Admin() {
         
         for (const row of jsonData) {
           try {
-            await axios.post('http://localhost:5000/api/siswa', {
+            await axios.post(`${API_BASE_URL}/tambah_siswa.php`, {
               nis: row.nis, nama: row.nama || `Siswa ${row.nis}`,
               password: row.nis, rombel: row.rombel || '-', asal_sekolah: row.asal_sekolah || '-'
             });
@@ -242,7 +247,7 @@ function Admin() {
             { nis: row.nis, mapel: 'IPA', [kategori]: row.ipa || 0 }
           ];
 
-          for (const d of payload) { await axios.post('http://localhost:5000/api/nilai', d); }
+          for (const d of payload) { await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, d); }
         }
         const namaKat = daftarKategori.find(k => k.id_kategori === kategori)?.nama_kategori || kategori;
         setPesan({ tipe: 'success', isi: `🎉 Berhasil! Data Siswa & Nilai ${namaKat} telah diperbarui.` });
@@ -343,7 +348,6 @@ function Admin() {
                 <div className="mt-4 p-3 bg-light rounded border border-secondary shadow-sm">
                   <h6 className="fw-bold mb-3">⚙️ Pengaturan Kategori Nilai</h6>
                   
-                  {/* List Edit & Hapus Kategori */}
                   {kategoriEditData.map((kat, index) => (
                     <div className="mb-2 d-flex align-items-center gap-2" key={kat.id_kategori}>
                       <span className="badge bg-secondary" style={{ width: '70px' }}>Urutan {index + 1}</span>
@@ -362,7 +366,6 @@ function Admin() {
 
                   <hr />
                   
-                  {/* Form Tambah Kategori Baru */}
                   <h6 className="fw-bold mb-2 text-success">➕ Tambah Kategori Ujian Baru</h6>
                   <div className="d-flex gap-2">
                     <input type="text" className="form-control form-control-sm" placeholder="Misal: Ujian Praktek, PTS, dll." value={kategoriBaru} onChange={(e) => setKategoriBaru(e.target.value)} />
@@ -371,7 +374,6 @@ function Admin() {
 
                   <hr />
 
-                  {/* Form Edit Judul Laporan */}
                   <h6 className="fw-bold mb-2 text-primary">📝 Pengaturan Judul Laporan (Cetak)</h6>
                   <div className="d-flex gap-2">
                     <input 

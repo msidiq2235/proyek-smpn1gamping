@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../apiConfig'; // Pastikan import ini ada
 
 function Beranda() {
   const role = localStorage.getItem('role');
@@ -19,18 +20,18 @@ function Beranda() {
     updateWaktu();
     const interval = setInterval(updateWaktu, 60000);
 
-    // 2. Logika Profil Dinamis
+    // 2. Logika Profil Dinamis (Diubah ke PHP)
     const fetchProfil = async () => {
       // JIKA ADMIN: Langsung set nama tanpa panggil API siswa
-      if (role === 'admin') {
+      if (role === 'admin' || nis === 'admin') {
         setProfil({ nama: 'Administrator', rombel: 'Sistem', nis: 'Admin-Root' });
         return;
       }
 
-      // JIKA SISWA: Panggil API seperti biasa
+      // JIKA SISWA: Panggil API PHP
       if (nis) {
         try {
-          const res = await axios.get(`http://localhost:5000/api/siswa/${nis}`);
+          const res = await axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`);
           if (res.data && res.data.profil) {
             setProfil(res.data.profil);
           }
@@ -43,7 +44,7 @@ function Beranda() {
 
     fetchProfil();
     return () => clearInterval(interval);
-  }, [nis, role]); // Tambahkan role di dependency array
+  }, [nis, role]); 
 
   const handleLogout = () => {
     localStorage.clear(); // Hapus semua data session
@@ -140,8 +141,8 @@ function Beranda() {
           </div>
         </div>
 
-        {/* Menu Khusus Admin (Hanya muncul jika role === 'admin') */}
-        {role === 'admin' && (
+        {/* Menu Khusus Admin (Hanya muncul jika role === 'admin' atau nis === 'admin') */}
+        {(role === 'admin' || nis === 'admin') && (
           <div className="row mt-5">
             <div className="col-12">
               <Link to="/admin" className="text-decoration-none">

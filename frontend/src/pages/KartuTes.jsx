@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
+import { API_BASE_URL } from '../apiConfig'; // Import konfigurasi URL API
 
 function KartuTes() {
   // Inisialisasi state dengan objek kosong agar tidak null
@@ -19,7 +20,7 @@ function KartuTes() {
     const role = localStorage.getItem('role');
 
     // Jika yang login Admin, langsung hentikan loading tanpa ambil data API
-    if (role === 'admin') {
+    if (role === 'admin' || nis === 'admin') {
       setLoading(false);
       return;
     }
@@ -30,7 +31,8 @@ function KartuTes() {
       return navigate('/');
     }
 
-    axios.get(`http://localhost:5000/api/siswa/${nis}`)
+    // PERUBAHAN: Memanggil API PHP untuk mengambil profil
+    axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`)
       .then(res => {
         if (res.data && res.data.profil) {
           setProfil(res.data.profil);
@@ -124,7 +126,7 @@ function KartuTes() {
         </div>
         
         {/* Pesan Tambahan khusus Admin */}
-        {localStorage.getItem('role') === 'admin' && (
+        {(localStorage.getItem('role') === 'admin' || localStorage.getItem('nis') === 'admin') && (
           <div className="alert alert-warning mt-4 d-print-none text-center small">
             <strong>Mode Admin:</strong> Menampilkan layout kartu kosong untuk preview.
           </div>

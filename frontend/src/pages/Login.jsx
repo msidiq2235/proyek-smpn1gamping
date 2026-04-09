@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; // Pastikan axios diimport
+import { API_BASE_URL } from '../apiConfig';
 
 function Login() {
   const [nis, setNis] = useState('');
@@ -15,7 +16,7 @@ function Login() {
     setLoading(true);
 
     // 1. LOGIKA UNTUK ADMIN (Statik)
-    if (nis === 'admin' && password === 'admin123') {
+    if (nis === 'admin' && password === 'yogatama123') {
       localStorage.setItem('nis', 'admin');
       localStorage.setItem('role', 'admin');
       navigate('/admin');
@@ -24,14 +25,14 @@ function Login() {
 
     // 2. LOGIKA UNTUK SISWA (Cek ke Database)
     try {
-      const response = await axios.post('http://localhost:5000/api/login', {
+      const response = await axios.post(`${API_BASE_URL}/login.php`, {
         nis: nis,
         password: password
       });
 
       if (response.data.success) {
         // SIMPAN KE LOCALSTORAGE (Penting!)
-        localStorage.setItem('nis', response.data.nis); 
+        localStorage.setItem('nis', response.data.user.nis); 
         localStorage.setItem('role', 'siswa');
         
         navigate('/beranda');

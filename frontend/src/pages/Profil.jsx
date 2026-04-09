@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../apiConfig'; // Pastikan import ini ada
 
 function Profil() {
   const [siswa, setSiswa] = useState({
@@ -17,7 +18,7 @@ function Profil() {
   useEffect(() => {
     const fetchProfil = async () => {
       // Jika Admin, tidak perlu fetch data siswa berdasarkan NIS
-      if (role === 'admin') {
+      if (role === 'admin' || nis === 'admin') {
         setSiswa({
           nis: 'ADMIN-ACCESS',
           password: '*****',
@@ -31,12 +32,13 @@ function Profil() {
 
       if (!nis) return;
       try {
-        const res = await axios.get(`http://localhost:5000/api/siswa/${nis}`);
+        // PERUBAHAN DI SINI: Menggunakan API PHP XAMPP
+        const res = await axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`);
         if (res.data && res.data.profil) {
           setSiswa(res.data.profil);
         }
       } catch (err) {
-        console.error("Gagal load profil");
+        console.error("Gagal load profil dari server PHP");
       } finally {
         setLoading(false);
       }
@@ -72,10 +74,10 @@ function Profil() {
             
             {/* Header Icon */}
             <div className="text-center mb-4">
-              <div className={role === 'admin' ? "text-danger mb-2" : "text-primary mb-2"} style={{ fontSize: '50px' }}>
-                {role === 'admin' ? '🛡️' : '👤'}
+              <div className={(role === 'admin' || nis === 'admin') ? "text-danger mb-2" : "text-primary mb-2"} style={{ fontSize: '50px' }}>
+                {(role === 'admin' || nis === 'admin') ? '🛡️' : '👤'}
               </div>
-              <h4 className="fw-bold text-dark">{role === 'admin' ? 'Profil Administrator' : 'Profil Siswa'}</h4>
+              <h4 className="fw-bold text-dark">{(role === 'admin' || nis === 'admin') ? 'Profil Administrator' : 'Profil Siswa'}</h4>
             </div>
 
             <div className="row g-3">
@@ -151,7 +153,7 @@ function Profil() {
         </div>
         
         {/* Pesan Tambahan khusus Admin atau Siswa */}
-        {role === 'admin' ? (
+        {(role === 'admin' || nis === 'admin') ? (
           <div className="alert alert-warning mt-4 text-center small border-0 shadow-sm" style={{ borderRadius: '12px' }}>
             <strong>Mode Admin:</strong> Anda melihat tampilan profil sistem. Data siswa hanya dapat diubah melalui menu <strong>Admin Panel</strong>.
           </div>
