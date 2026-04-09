@@ -11,9 +11,8 @@ CREATE TABLE `pengaturan_judul` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data Default (Wajib ada agar tidak error)
 INSERT INTO `pengaturan_judul` (`id`, `judul`) VALUES 
-(1, 'Laporan Hasil Ulangan');
+(1, 'Laporan Hasil Evaluasi');
 
 
 -- ==========================================
@@ -27,18 +26,33 @@ CREATE TABLE `kategori_nilai` (
   PRIMARY KEY (`id_kategori`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data Default Kategori (Wajib ada untuk dropdown)
+-- Data Awal Kategori
 INSERT INTO `kategori_nilai` (`id_kategori`, `nama_kategori`) VALUES 
 ('latihan1', 'Latihan 1'),
-('latihan2', 'Latihan 2'),
-('latihan3', 'Latihan 3'),
-('latihan4', 'Latihan 4'),
-('latihan5', 'Latihan 5'),
-('kat_1775721594402', 'Latihan 6');
+('latihan2', 'Latihan 2');
 
 
 -- ==========================================
--- 3. TABEL SISWA (KOSONG)
+-- 3. TABEL MATA PELAJARAN 
+-- ==========================================
+DROP TABLE IF EXISTS `mata_pelajaran`;
+CREATE TABLE `mata_pelajaran` (
+  `id_mapel` int NOT NULL AUTO_INCREMENT,
+  `nama_mapel` varchar(50) NOT NULL,
+  PRIMARY KEY (`id_mapel`),
+  UNIQUE KEY `nama_mapel` (`nama_mapel`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Data Awal Mata Pelajaran agar tidak kosong saat baru buka
+INSERT INTO `mata_pelajaran` (`nama_mapel`) VALUES 
+('Bahasa Indonesia'),
+('Matematika'),
+('Bahasa Inggris'),
+('IPA');
+
+
+-- ==========================================
+-- 4. TABEL SISWA
 -- ==========================================
 DROP TABLE IF EXISTS `siswa`;
 CREATE TABLE `siswa` (
@@ -50,13 +64,13 @@ CREATE TABLE `siswa` (
   PRIMARY KEY (`nis`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Akun Default Admin (Agar kamu bisa login pertama kali)
+-- Akun Admin Default
 INSERT INTO `siswa` (`nis`, `nama`, `password`, `rombel`, `asal_sekolah`) VALUES 
 ('admin', 'Administrator', 'admin123', 'Sistem', 'SMPN 1 Gamping');
 
 
 -- ==========================================
--- 4. TABEL NILAI UJIAN (KOSONG)
+-- 5. TABEL NILAI UJIAN
 -- ==========================================
 DROP TABLE IF EXISTS `nilai_ujian`;
 CREATE TABLE `nilai_ujian` (
@@ -65,10 +79,6 @@ CREATE TABLE `nilai_ujian` (
   `mapel` varchar(50) DEFAULT NULL,
   `latihan1` float DEFAULT '0',
   `latihan2` float DEFAULT '0',
-  `latihan3` float DEFAULT '0',
-  `latihan4` float DEFAULT '0',
-  `latihan5` float DEFAULT '0',
-  `kat_1775721594402` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nis_mapel` (`nis`,`mapel`),
   CONSTRAINT `nilai_ujian_ibfk_1` FOREIGN KEY (`nis`) REFERENCES `siswa` (`nis`) ON DELETE CASCADE

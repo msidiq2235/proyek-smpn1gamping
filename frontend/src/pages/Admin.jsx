@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from "xlsx";
-import { API_BASE_URL } from '../apiConfig'; // Pastikan import ini ada
+import { API_BASE_URL } from '../apiConfig';
 
 function Admin() {
   const navigate = useNavigate();
@@ -12,6 +12,11 @@ function Admin() {
   const [namaTerdeteksi, setNamaTerdeteksi] = useState('');
   const [daftarSiswa, setDaftarSiswa] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // State Dinamis untuk Mapel
+  const [daftarMapel, setDaftarMapel] = useState([]);
+  const [inputNilaiMapel, setInputNilaiMapel] = useState({});
+  const [mapelBaru, setMapelBaru] = useState('');
 
   const [siswa, setSiswa] = useState({
     nis: '', nama: '', password: '', rombel: '', asal_sekolah: ''
@@ -27,35 +32,38 @@ function Admin() {
   // State Judul Laporan
   const [judulLaporan, setJudulLaporan] = useState('Laporan Hasil Evaluasi');
 
-  const [inputKolektif, setInputKolektif] = useState({
-    nis: '', indo: '', mtk: '', inggris: '', ipa: ''
-  });
+  const [nisKolektif, setNisKolektif] = useState('');
 
   useEffect(() => {
     if (role !== 'admin' && localStorage.getItem('nis') !== 'admin') navigate('/beranda');
     muatDaftarSiswa();
     muatKategori();
     muatJudul();
+    muatMapel();
   }, [role, navigate]);
 
   // ==========================================
-  // FUNGSI MEMUAT DATA (Diubah ke PHP)
+  // FUNGSI MEMUAT DATA
   // ==========================================
+  const muatMapel = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/get_mapel.php`);
+      setDaftarMapel(res.data);
+    } catch (err) { console.error("Gagal muat mapel:", err); }
+  };
+
   const muatDaftarSiswa = async () => {
     try {
       const [resSiswa, resNilai] = await Promise.all([
         axios.get(`${API_BASE_URL}/get_all_siswa.php`),
         axios.get(`${API_BASE_URL}/get_all_nilai.php`)
       ]);
-
       const dataSiswa = Array.isArray(resSiswa.data) ? resSiswa.data : [];
       const dataNilai = Array.isArray(resNilai.data) ? resNilai.data : [];
-
       const dataGabungan = dataSiswa.map(siswa => ({
         ...siswa,
         daftar_nilai: dataNilai.filter(n => n.nis === siswa.nis)
       }));
-
       setDaftarSiswa(dataGabungan);
     } catch (err) { console.error("Gagal sinkronisasi data:", err); }
   };
@@ -65,9 +73,7 @@ function Admin() {
       const res = await axios.get(`${API_BASE_URL}/get_kategori.php`);
       setDaftarKategori(res.data);
       setKategoriEditData(res.data); 
-      if(res.data.length > 0 && !kategori) {
-          setKategori(res.data[0].id_kategori);
-      }
+      if(res.data.length > 0 && !kategori) setKategori(res.data[0].id_kategori);
     } catch (err) { console.error("Gagal memuat kategori:", err); }
   };
 
@@ -79,7 +85,7 @@ function Admin() {
   };
 
   // ==========================================
-  // FUNGSI KATEGORI & JUDUL (Diubah ke PHP)
+  // FUNGSI PENGATURAN (KATEGORI, MAPEL, JUDUL)
   // ==========================================
   const simpanKategori = async () => {
     try {
@@ -97,7 +103,6 @@ function Admin() {
   const tambahKategori = async () => {
     if (!kategoriBaru) return;
     try {
-      setPesan({ tipe: 'info', isi: '⏳ Sedang membuat kolom di database...' });
       await axios.post(`${API_BASE_URL}/tambah_kategori.php`, { nama_kategori: kategoriBaru });
       setKategoriBaru('');
       muatKategori();
@@ -106,15 +111,35 @@ function Admin() {
   };
 
   const hapusKategori = async (id, nama) => {
-    if (window.confirm(`⚠️ Yakin ingin menghapus kategori "${nama}"? SEMUA NILAI SISWA DI KATEGORI INI AKAN HILANG PERMANEN!`)) {
+    if (window.confirm(`⚠️ Yakin ingin menghapus kategori "${nama}"? SEMUA NILAI AKAN HILANG!`)) {
       try {
-        setPesan({ tipe: 'info', isi: '⏳ Sedang menghapus kolom dari database...' });
         await axios.post(`${API_BASE_URL}/hapus_kategori.php`, { id_kategori: id });
         if (kategori === id) setKategori(''); 
         muatKategori();
         muatDaftarSiswa(); 
         setPesan({ tipe: 'warning', isi: `Kategori "${nama}" telah dihapus.` });
       } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menghapus kategori.' }); }
+    }
+  };
+
+  const tambahMapel = async () => {
+    if (!mapelBaru) return;
+    try {
+      await axios.post(`${API_BASE_URL}/tambah_mapel.php`, { nama_mapel: mapelBaru });
+      setMapelBaru('');
+      muatMapel();
+      setPesan({ tipe: 'success', isi: `Mata Pelajaran "${mapelBaru}" berhasil ditambahkan!` });
+    } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menambah mata pelajaran.' }); }
+  };
+
+  const hapusMapel = async (id, nama) => {
+    if (window.confirm(`Yakin ingin menghapus mata pelajaran "${nama}"?`)) {
+      try {
+        await axios.post(`${API_BASE_URL}/hapus_mapel.php`, { id_mapel: id });
+        muatMapel();
+        muatDaftarSiswa();
+        setPesan({ tipe: 'warning', isi: `Mata Pelajaran "${nama}" telah dihapus.` });
+      } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menghapus mata pelajaran.' }); }
     }
   };
 
@@ -126,7 +151,7 @@ function Admin() {
   };
 
   // ==========================================
-  // FUNGSI SISWA & NILAI (Diubah ke PHP)
+  // FUNGSI SISWA & NILAI
   // ==========================================
   const handleCariKolektif = async (nisInput, kategoriInput) => {
     const cleanNIS = nisInput.trim();
@@ -137,18 +162,15 @@ function Admin() {
           setNamaTerdeteksi(resSiswa.data.profil.nama);
           const resNilai = await axios.get(`${API_BASE_URL}/get_nilai.php?nis=${cleanNIS}`).catch(() => ({ data: [] }));
           const dataNilai = Array.isArray(resNilai.data) ? resNilai.data : [];
-          const getVal = (m) => dataNilai.find(n => n.mapel === m)?.[kategoriInput] || '';
-
-          setInputKolektif({
-            nis: cleanNIS,
-            indo: getVal('Bahasa Indonesia'), mtk: getVal('Matematika'),
-            inggris: getVal('Bahasa Inggris'), ipa: getVal('IPA')
+          
+          const tempNilai = {};
+          daftarMapel.forEach(m => {
+             const n = dataNilai.find(dn => dn.mapel === m.nama_mapel);
+             tempNilai[m.nama_mapel] = n ? n[kategoriInput] : '';
           });
-        } else { setNamaTerdeteksi(''); }
-      } catch (err) {
-        setNamaTerdeteksi('');
-        setInputKolektif({ ...inputKolektif, nis: cleanNIS, indo: '', mtk: '', inggris: '', ipa: '' });
-      }
+          setInputNilaiMapel(tempNilai);
+        } else { setNamaTerdeteksi(''); setInputNilaiMapel({}); }
+      } catch (err) { setNamaTerdeteksi(''); setInputNilaiMapel({}); }
     }
   };
 
@@ -169,90 +191,83 @@ function Admin() {
   };
 
   const editSiswa = (data) => {
-    setSiswa(data);
+    setSiswa({
+      nis: data.nis, nama: data.nama, password: data.password, 
+      rombel: data.rombel, asal_sekolah: data.asal_sekolah
+    });
     setIsEditMode(true);
+    setNisKolektif(data.nis);
+
+    const tempNilai = {};
+    daftarMapel.forEach(m => {
+      const n = data.daftar_nilai.find(dn => dn.mapel === m.nama_mapel);
+      tempNilai[m.nama_mapel] = n ? n[kategori] : '';
+    });
+    setInputNilaiMapel(tempNilai);
+    setNamaTerdeteksi(data.nama);
     window.scrollTo(0, 0);
   };
 
   const hapusSiswa = async (nis) => {
-    if (window.confirm("Hapus siswa ini? Semua nilai siswa ini juga akan hilang.")) {
+    if (window.confirm("Hapus siswa ini?")) {
       try {
         await axios.get(`${API_BASE_URL}/hapus_siswa.php?nis=${nis}`);
-        setPesan({ tipe: 'warning', isi: 'Siswa berhasil dihapus.' });
         muatDaftarSiswa();
+        setPesan({ tipe: 'warning', isi: 'Siswa berhasil dihapus.' });
       } catch (err) { console.error(err); }
     }
   };
 
   const hapusSemuaSiswa = async () => {
-    const konfirmasi = window.prompt('🚨 PERINGATAN KERAS! 🚨\nAksi ini akan menghapus SEMUA data siswa beserta nilainya secara permanen untuk pergantian tahun ajaran.\n\nKetik "HAPUS" untuk melanjutkan:');
+    const konfirmasi = window.prompt('Ketik "HAPUS" untuk menghapus semua data:');
     if (konfirmasi === 'HAPUS') {
       try {
-        setPesan({ tipe: 'info', isi: 'Memproses penghapusan data masal...' });
         await axios.get(`${API_BASE_URL}/hapus_semua_siswa.php`);
-        setPesan({ tipe: 'danger', isi: 'Semua data siswa berhasil dikosongkan untuk tahun ajaran baru.' });
-        muatDaftarSiswa(); 
-      } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menghapus semua data.' }); }
+        muatDaftarSiswa();
+        setPesan({ tipe: 'danger', isi: 'Semua data telah dikosongkan.' });
+      } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menghapus data.' }); }
     }
   };
 
   const simpanNilaiKolektif = async (e) => {
     e.preventDefault();
-    if (!kategori) return setPesan({ tipe: 'danger', isi: 'Pilih kategori nilai terlebih dahulu!' });
-
+    if (!kategori) return setPesan({ tipe: 'danger', isi: 'Pilih kategori!' });
     try {
-      const payload = [
-        { nis: inputKolektif.nis, mapel: 'Bahasa Indonesia', [kategori]: inputKolektif.indo },
-        { nis: inputKolektif.nis, mapel: 'Matematika', [kategori]: inputKolektif.mtk },
-        { nis: inputKolektif.nis, mapel: 'Bahasa Inggris', [kategori]: inputKolektif.inggris },
-        { nis: inputKolektif.nis, mapel: 'IPA', [kategori]: inputKolektif.ipa }
-      ];
-
-      for (const data of payload) {
+      for (const m of daftarMapel) {
+        const data = { nis: nisKolektif, mapel: m.nama_mapel, [kategori]: inputNilaiMapel[m.nama_mapel] || 0 };
         await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, data);
       }
-
-      const namaKat = daftarKategori.find(k => k.id_kategori === kategori)?.nama_kategori || kategori;
-      setPesan({ tipe: 'success', isi: `Nilai ${namaKat} Berhasil Disimpan!` });
-      handleCariKolektif(inputKolektif.nis, kategori); 
+      setPesan({ tipe: 'success', isi: 'Nilai Berhasil Disimpan!' });
+      muatDaftarSiswa();
     } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menyimpan nilai.' }); }
   };
 
   const handleImportExcel = (e) => {
     const file = e.target.files[0];
-    if (!file || !kategori) return alert("Pilih kategori nilai terlebih dahulu sebelum import!");
-
+    if (!file || !kategori) return alert("Pilih kategori terlebih dahulu!");
     const reader = new FileReader();
     reader.onload = async (evt) => {
       const data = new Uint8Array(evt.target.result);
       const workbook = XLSX.read(data, { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
-
       try {
-        setPesan({ tipe: 'info', isi: '🚀 Sedang memproses data... Jangan tutup halaman ini.' });
-        
+        setPesan({ tipe: 'info', isi: '🚀 Sedang memproses...' });
         for (const row of jsonData) {
           try {
             await axios.post(`${API_BASE_URL}/tambah_siswa.php`, {
               nis: row.nis, nama: row.nama || `Siswa ${row.nis}`,
               password: row.nis, rombel: row.rombel || '-', asal_sekolah: row.asal_sekolah || '-'
             });
-          } catch (err) { /* Abaikan jika siswa sudah ada */ }
-
-          const payload = [
-            { nis: row.nis, mapel: 'Bahasa Indonesia', [kategori]: row.indo || 0 },
-            { nis: row.nis, mapel: 'Matematika', [kategori]: row.mtk || 0 },
-            { nis: row.nis, mapel: 'Bahasa Inggris', [kategori]: row.inggris || 0 },
-            { nis: row.nis, mapel: 'IPA', [kategori]: row.ipa || 0 }
-          ];
-
-          for (const d of payload) { await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, d); }
+          } catch (err) { }
+          for (const m of daftarMapel) {
+            const payload = { nis: row.nis, mapel: m.nama_mapel, [kategori]: row[m.nama_mapel] || 0 };
+            await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, payload);
+          }
         }
-        const namaKat = daftarKategori.find(k => k.id_kategori === kategori)?.nama_kategori || kategori;
-        setPesan({ tipe: 'success', isi: `🎉 Berhasil! Data Siswa & Nilai ${namaKat} telah diperbarui.` });
+        setPesan({ tipe: 'success', isi: `🎉 Import Selesai.` });
         muatDaftarSiswa(); 
-      } catch (err) { setPesan({ tipe: 'danger', isi: '❌ Import gagal! Pastikan format kolom Excel sudah benar.' }); }
+      } catch (err) { setPesan({ tipe: 'danger', isi: '❌ Import gagal!' }); }
     };
     reader.readAsArrayBuffer(file);
   };
@@ -264,22 +279,18 @@ function Admin() {
       <nav className="navbar navbar-expand-lg bg-primary shadow-sm py-3 mb-5">
         <div className="container px-4">
           <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
-            <img src="/logo_smpn1gmp.png" alt="Logo SMPN 1 Gamping" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-            Panel Admin
+            <img src="/logo_smpn1gmp.png" alt="Logo" style={{ width: '32px' }} /> Panel Admin
           </span>
           <div className="ms-auto"><Link to="/beranda" className="btn btn-light text-primary btn-sm fw-bold">⬅ Beranda</Link></div>
         </div>
       </nav>
 
       <div className="container px-4">
-        {pesan.isi && <div className={`alert alert-${pesan.tipe} alert-dismissible fade show mb-4`}>
-          {pesan.isi}
-          <button type="button" className="btn-close" onClick={() => setPesan({tipe:'', isi:''})}></button>
-        </div>}
+        {pesan.isi && <div className={`alert alert-${pesan.tipe} alert-dismissible fade show mb-4`}>{pesan.isi}</div>}
 
         <div className="row g-4 mb-5">
           {/* CRUD SISWA */}
-          <div className="col-md-5">
+          <div className="col-md-4">
             <div className="card p-4 border-0 shadow-sm" style={{borderRadius: '15px'}}>
               <h5 className="fw-bold mb-4">{isEditMode ? '✏️ Edit Siswa' : '➕ Tambah Siswa'}</h5>
               <form onSubmit={simpanSiswa}>
@@ -294,153 +305,127 @@ function Admin() {
             </div>
           </div>
 
-          {/* INPUT NILAI & IMPORT */}
-          <div className="col-md-7">
+          {/* INPUT NILAI DINAMIS */}
+          <div className="col-md-8">
             <div className="card p-4 border-0 shadow-sm" style={{borderRadius: '15px'}}>
               <div className="d-flex justify-content-between align-items-center mb-4">
                 <h5 className="fw-bold mb-0">📊 Input Nilai </h5>
-                <div>
-                  <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="d-none" id="importExcel" />
-                  <label htmlFor="importExcel" className="btn btn-success btn-sm fw-bold">📂 Import Excel</label>
-                </div>
+                <label htmlFor="importExcel" className="btn btn-success btn-sm fw-bold">📂 Import Excel</label>
+                <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="d-none" id="importExcel" />
               </div>
 
               <form onSubmit={simpanNilaiKolektif}>
                 <div className="row g-2 mb-3">
                   <div className="col-7">
-                    <input type="text" className="form-control" placeholder="Cari NIS..." value={inputKolektif.nis} 
-                      onChange={(e)=>{
-                        const val=e.target.value;
-                        setInputKolektif({...inputKolektif, nis:val});
-                        handleCariKolektif(val, kategori);
-                      }}
+                    <input type="text" className="form-control" placeholder="Cari NIS..." value={nisKolektif} 
+                      onChange={(e)=>{setNisKolektif(e.target.value); handleCariKolektif(e.target.value, kategori);}}
                     />
                   </div>
-                  
                   <div className="col-5 d-flex gap-2">
-                    <select className="form-select fw-bold text-primary" value={kategori} onChange={(e) => {
-                      setKategori(e.target.value);
-                      handleCariKolektif(inputKolektif.nis, e.target.value);
-                    }}>
+                    <select className="form-select fw-bold text-primary" value={kategori} onChange={(e) => {setKategori(e.target.value); handleCariKolektif(nisKolektif, e.target.value);}}>
                       <option value="" disabled>-- Pilih --</option>
-                      {daftarKategori.map((kat) => (
-                        <option key={kat.id_kategori} value={kat.id_kategori}>{kat.nama_kategori}</option>
-                      ))}
+                      {daftarKategori.map((kat) => (<option key={kat.id_kategori} value={kat.id_kategori}>{kat.nama_kategori}</option>))}
                     </select>
-                    <button type="button" className="btn btn-outline-secondary" onClick={() => setModeEditKategori(!modeEditKategori)} title="Pengaturan">⚙️</button>
+                    <button type="button" className="btn btn-outline-secondary" onClick={() => setModeEditKategori(!modeEditKategori)}>⚙️</button>
                   </div>
                 </div>
 
-                {namaTerdeteksi && <div className="alert alert-info py-2 small fw-bold">Siswa: {namaTerdeteksi}</div>}
+                {namaTerdeteksi && <div className="alert alert-info py-2 small fw-bold mb-3">Siswa: {namaTerdeteksi}</div>}
 
                 <div className="row g-3 mb-4">
-                  <div className="col-6"><label className="small fw-bold">B. Indonesia</label><input type="number" className="form-control" value={inputKolektif.indo} onChange={(e)=>setInputKolektif({...inputKolektif, indo:e.target.value})} /></div>
-                  <div className="col-6"><label className="small fw-bold">Matematika</label><input type="number" className="form-control" value={inputKolektif.mtk} onChange={(e)=>setInputKolektif({...inputKolektif, mtk:e.target.value})} /></div>
-                  <div className="col-6"><label className="small fw-bold">B. Inggris</label><input type="number" className="form-control" value={inputKolektif.inggris} onChange={(e)=>setInputKolektif({...inputKolektif, inggris:e.target.value})} /></div>
-                  <div className="col-6"><label className="small fw-bold">IPA</label><input type="number" className="form-control" value={inputKolektif.ipa} onChange={(e)=>setInputKolektif({...inputKolektif, ipa:e.target.value})} /></div>
+                  {daftarMapel.map((m) => (
+                    <div className="col-6 col-md-4" key={m.id_mapel}>
+                      <label className="small fw-bold">{m.nama_mapel}</label>
+                      <input type="number" className="form-control" value={inputNilaiMapel[m.nama_mapel] || ''} 
+                        onChange={(e)=> setInputNilaiMapel({...inputNilaiMapel, [m.nama_mapel]: e.target.value})} 
+                      />
+                    </div>
+                  ))}
                 </div>
-
                 <button className="btn btn-success w-100 fw-bold" disabled={!namaTerdeteksi || !kategori}>💾 Simpan Nilai {namaKategoriAktif}</button>
               </form>
 
-              {/* PANEL PENGATURAN KATEGORI & JUDUL */}
+              {/* PANEL PENGATURAN */}
               {modeEditKategori && (
                 <div className="mt-4 p-3 bg-light rounded border border-secondary shadow-sm">
-                  <h6 className="fw-bold mb-3">⚙️ Pengaturan Kategori Nilai</h6>
+                  <h6 className="fw-bold mb-3 text-primary">⚙️ PENGATURAN SISTEM</h6>
                   
+                  <p className="small fw-bold mb-2">1. Kelola Kategori Ujian</p>
                   {kategoriEditData.map((kat, index) => (
-                    <div className="mb-2 d-flex align-items-center gap-2" key={kat.id_kategori}>
-                      <span className="badge bg-secondary" style={{ width: '70px' }}>Urutan {index + 1}</span>
+                    <div className="mb-2 d-flex gap-2" key={kat.id_kategori}>
                       <input type="text" className="form-control form-control-sm" value={kat.nama_kategori} onChange={(e) => {
                         const newData = [...kategoriEditData];
                         newData[index].nama_kategori = e.target.value;
                         setKategoriEditData(newData);
                       }} />
-                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => hapusKategori(kat.id_kategori, kat.nama_kategori)} title="Hapus Kategori">🗑️</button>
+                      <button className="btn btn-sm btn-outline-danger" onClick={() => hapusKategori(kat.id_kategori, kat.nama_kategori)}>🗑️</button>
                     </div>
                   ))}
-                  
-                  <div className="d-flex justify-content-end mb-4">
-                    <button type="button" className="btn btn-sm btn-primary" onClick={simpanKategori}>💾 Simpan Nama Baru</button>
+                  <button className="btn btn-sm btn-primary w-100 mb-2" onClick={simpanKategori}>Simpan Nama Kategori</button>
+                  <div className="d-flex gap-2 mb-4">
+                    <input type="text" className="form-control form-control-sm" placeholder="Kategori Baru..." value={kategoriBaru} onChange={(e) => setKategoriBaru(e.target.value)} />
+                    <button className="btn btn-sm btn-success" onClick={tambahKategori}>Tambah</button>
                   </div>
 
                   <hr />
-                  
-                  <h6 className="fw-bold mb-2 text-success">➕ Tambah Kategori Ujian Baru</h6>
-                  <div className="d-flex gap-2">
-                    <input type="text" className="form-control form-control-sm" placeholder="Misal: Ujian Praktek, PTS, dll." value={kategoriBaru} onChange={(e) => setKategoriBaru(e.target.value)} />
-                    <button type="button" className="btn btn-sm btn-success text-nowrap" onClick={tambahKategori} disabled={!kategoriBaru}>Tambah</button>
+                  <p className="small fw-bold mb-2">2. Kelola Mata Pelajaran</p>
+                  <div className="d-flex flex-wrap gap-2 mb-3">
+                    {daftarMapel.map((m) => (
+                      <span key={m.id_mapel} className="badge bg-white text-dark border d-flex align-items-center gap-2 p-2">
+                        {m.nama_mapel}
+                        <button type="button" className="btn-close" style={{ fontSize: '10px' }} onClick={() => hapusMapel(m.id_mapel, m.nama_mapel)}></button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="d-flex gap-2 mb-4">
+                    <input type="text" className="form-control form-control-sm" placeholder="Mapel Baru..." value={mapelBaru} onChange={(e) => setMapelBaru(e.target.value)} />
+                    <button className="btn btn-sm btn-success" onClick={tambahMapel}>Tambah Mapel</button>
                   </div>
 
                   <hr />
-
-                  <h6 className="fw-bold mb-2 text-primary">📝 Pengaturan Judul Laporan (Cetak)</h6>
+                  <p className="small fw-bold mb-2">3. Judul Laporan</p>
                   <div className="d-flex gap-2">
-                    <input 
-                      type="text" 
-                      className="form-control form-control-sm" 
-                      value={judulLaporan} 
-                      onChange={(e) => setJudulLaporan(e.target.value)} 
-                    />
-                    <button type="button" className="btn btn-sm btn-primary text-nowrap" onClick={simpanJudul}>
-                      Simpan Judul
-                    </button>
+                    <input type="text" className="form-control form-control-sm" value={judulLaporan} onChange={(e) => setJudulLaporan(e.target.value)} />
+                    <button className="btn btn-sm btn-primary" onClick={simpanJudul}>Simpan Judul</button>
                   </div>
-
-                  <div className="d-flex justify-content-end mt-4">
-                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => setModeEditKategori(false)}>Tutup Panel</button>
-                  </div>
+                  <button type="button" className="btn btn-sm btn-secondary w-100 mt-4" onClick={() => setModeEditKategori(false)}>Tutup Panel</button>
                 </div>
               )}
-
             </div>
           </div>
         </div>
 
-        {/* TABEL DATA SISWA */}
+        {/* TABEL DATA SISWA DINAMIS */}
         <div className="card border-0 shadow-sm p-4" style={{ borderRadius: '20px' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h5 className="fw-bold mb-0">📋 Rekap Nilai Siswa ({namaKategoriAktif})</h5>
-            <div className="d-flex gap-2 align-items-center">
-              <div className="badge bg-primary px-3 py-2">{namaKategoriAktif}</div>
-              <button className="btn btn-danger btn-sm fw-bold shadow-sm" onClick={hapusSemuaSiswa} title="Kosongkan data">🚨 Hapus Semua Data</button>
-            </div>
+            <h5 className="fw-bold mb-0">📋 Rekap Nilai ({namaKategoriAktif})</h5>
+            <button className="btn btn-danger btn-sm fw-bold" onClick={hapusSemuaSiswa}>🚨 Hapus Semua Data</button>
           </div>
-          
           <div className="table-responsive">
             <table className="table table-hover align-middle">
               <thead className="table-light">
                 <tr>
-                  <th>NIS</th><th>Nama Siswa</th><th>Rombel</th>
-                  <th className="text-center text-danger">Indo</th><th className="text-center text-danger">Mtk</th>
-                  <th className="text-center text-danger">Inggris</th><th className="text-center text-danger">IPA</th>
+                  <th>NIS</th><th>Nama</th><th>Rombel</th>
+                  {daftarMapel.map(m => (<th key={m.id_mapel} className="text-center text-danger">{m.nama_mapel}</th>))}
                   <th className="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {daftarSiswa.map((s) => {
-                  const getSkor = (mapel) => {
-                    const data = s.daftar_nilai.find(n => n.mapel === mapel);
-                    return data && data[kategori] !== undefined && data[kategori] !== null ? data[kategori] : '-';
-                  };
-
-                  return (
-                    <tr key={s.nis}>
-                      <td>{s.nis}</td><td className="fw-bold">{s.nama}</td>
-                      <td><span className="badge bg-secondary">{s.rombel}</span></td>
-                      <td className="text-center fw-bold text-primary">{getSkor('Bahasa Indonesia')}</td>
-                      <td className="text-center fw-bold text-primary">{getSkor('Matematika')}</td>
-                      <td className="text-center fw-bold text-primary">{getSkor('Bahasa Inggris')}</td>
-                      <td className="text-center fw-bold text-primary">{getSkor('IPA')}</td>
-                      <td className="text-center">
-                        <div className="btn-group">
-                          <button className="btn btn-sm btn-outline-warning" onClick={() => editSiswa(s)}>✏️</button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => hapusSiswa(s.nis)}>🗑️</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {daftarSiswa.map((s) => (
+                  <tr key={s.nis}>
+                    <td>{s.nis}</td><td className="fw-bold">{s.nama}</td><td>{s.rombel}</td>
+                    {daftarMapel.map(m => {
+                       const data = s.daftar_nilai.find(n => n.mapel === m.nama_mapel);
+                       return <td key={m.id_mapel} className="text-center fw-bold text-primary">{data ? data[kategori] : '-'}</td>
+                    })}
+                    <td className="text-center">
+                      <div className="btn-group">
+                        <button className="btn btn-sm btn-outline-warning" onClick={() => editSiswa(s)}>✏️</button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => hapusSiswa(s.nis)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
