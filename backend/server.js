@@ -13,8 +13,8 @@ app.use(express.json());
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',      
-    port : 3307,
-    password: 'MSidiq',      
+    port : 3308,
+    password: 'Tahu13bulat11',      
     database: 'db_penilaian_siswa'
 });
 
@@ -23,7 +23,7 @@ db.connect((err) => {
         console.error('Gagal Terhubung ke MySQL:', err.message);
         return;
     }
-    console.log('Database MySQL Terhubung! (Port 3307)');
+    console.log('Database MySQL Terhubung! (Port 3308)');
 });
 
 // 1. API Login
@@ -59,27 +59,26 @@ app.post('/api/siswa', (req, res) => {
   });
 });
 
-// 4. API Simpan/Update Nilai (Hanya update kolom yang dikirim agar tidak menimpa nilai lain)
+// 4. API Simpan/Update Nilai (SUDAH DINAMIS)
 app.post('/api/nilai', (req, res) => {
-    const { nis, mapel, latihan1, latihan2, latihan3, latihan4, latihan5 } = req.body;
+    // Pisahkan data dasar dan data kategori dinamis
+    const { nis, mapel, ...nilaiKategori } = req.body;
     
-    // Query sakti: Jika data sudah ada, update kolom yang dikirim. 
-    // Jika kolom tidak dikirim (null), tetap gunakan nilai lama (IFNULL).
+    // Ambil nama kolom kategori yang dikirim (misal: 'latihan1' atau 'kat_171...')
+    const kategoriKey = Object.keys(nilaiKategori)[0]; 
+    const nilaiValue = nilaiKategori[kategoriKey];
+
+    if (!kategoriKey) return res.status(400).json({ error: "Kategori tidak valid" });
+
+    // Query dinamis yang beradaptasi dengan kategori yang dikirim
+    // Tanda ?? digunakan untuk nama kolom, tanda ? untuk nilai (mencegah SQL error)
     const sql = `
-        INSERT INTO nilai_ujian (nis, mapel, latihan1, latihan2, latihan3, latihan4, latihan5)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-        latihan1 = IFNULL(?, latihan1),
-        latihan2 = IFNULL(?, latihan2),
-        latihan3 = IFNULL(?, latihan3),
-        latihan4 = IFNULL(?, latihan4),
-        latihan5 = IFNULL(?, latihan5)
+        INSERT INTO nilai_ujian (nis, mapel, ??)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE ?? = ?
     `;
 
-    const values = [
-        nis, mapel, latihan1 || null, latihan2 || null, latihan3 || null, latihan4 || null, latihan5 || null,
-        latihan1 || null, latihan2 || null, latihan3 || null, latihan4 || null, latihan5 || null
-    ];
+    const values = [kategoriKey, nis, mapel, nilaiValue, kategoriKey, nilaiValue];
 
     db.query(sql, values, (err, result) => {
         if (err) return res.status(500).json(err);
@@ -87,23 +86,19 @@ app.post('/api/nilai', (req, res) => {
     });
 });
 
-// 5. API Ambil Nilai Per Siswa (DIPERBAIKI)
+// 5. API Ambil Nilai Per Siswa
 app.get('/api/siswa/:nis', (req, res) => {
     const sql = "SELECT * FROM siswa WHERE nis = ?";
     db.query(sql, [req.params.nis], (err, result) => {
         if (err) return res.status(500).json(err);
-        
-        // Jika data tidak ada, kirim objek kosong, jangan biarkan gantung
         if (result.length === 0) {
             return res.json({ profil: null, message: "Siswa tidak ditemukan" });
         }
-        
         res.json({ profil: result[0] });
     });
 });
 
-// 6. API Ambil Semua Siswa (Admin)
-// Ambil semua data siswa
+// 6. API Ambil Semua Siswa & Nilai
 app.get('/api/siswa_all', (req, res) => {
     db.query("SELECT * FROM siswa", (err, result) => {
         if (err) return res.status(500).json(err);
@@ -111,7 +106,6 @@ app.get('/api/siswa_all', (req, res) => {
     });
 });
 
-// Ambil semua data nilai (Baru)
 app.get('/api/nilai_all', (req, res) => {
     db.query("SELECT * FROM nilai_ujian", (err, result) => {
         if (err) return res.status(500).json(err);
@@ -137,7 +131,7 @@ app.delete('/api/siswa/:nis', (req, res) => {
     });
 });
 
-// 9. API Rata-rata Sekolah (DITAMBAHKAN latihan5)
+// 9. API Rata-rata Sekolah
 app.get('/api/rata_sekolah', (req, res) => {
     const sql = `
         SELECT 
@@ -156,15 +150,83 @@ app.get('/api/rata_sekolah', (req, res) => {
     });
 });
 
-// 10. API Ambil Nilai Berdasarkan NIS (WAJIB ADA UNTUK HALAMAN SISWA)
+// 10. API Ambil Nilai Berdasarkan NIS
 app.get('/api/nilai/:nis', (req, res) => {
     const sql = "SELECT * FROM nilai_ujian WHERE nis = ?";
     db.query(sql, [req.params.nis], (err, result) => {
         if (err) return res.status(500).json(err);
-        
-        // Kirim hasil pencarian (bisa array berisi beberapa mapel atau array kosong)
-        // Kita tidak kirim 404 agar Frontend tidak error merah
         res.json(result); 
+    });
+});
+
+// ==========================================
+// API KATEGORI NILAI (DINAMIS & CRUD)
+// ==========================================
+
+// Ambil Semua Kategori
+app.get('/api/kategori', (req, res) => {
+    db.query("SELECT * FROM kategori_nilai", (err, result) => {
+        if (err) return res.status(500).json(err);
+        res.json(result);
+    });
+});
+
+// Update Nama Kategori
+app.put('/api/kategori/:id', (req, res) => {
+    const { nama_kategori } = req.body;
+    const sql = "UPDATE kategori_nilai SET nama_kategori = ? WHERE id_kategori = ?";
+    db.query(sql, [nama_kategori, req.params.id], (err, result) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Nama kategori berhasil diperbarui!" });
+    });
+});
+
+// Tambah Kategori (Otomatis ALTER TABLE ADD COLUMN)
+app.post('/api/kategori', (req, res) => {
+    const { nama_kategori } = req.body;
+    const id_kategori = 'kat_' + Date.now(); // Buat ID unik anti bentrok
+
+    // 1. Simpan ke daftar kategori
+    db.query("INSERT INTO kategori_nilai (id_kategori, nama_kategori) VALUES (?, ?)", [id_kategori, nama_kategori], (err) => {
+        if (err) return res.status(500).json(err);
+
+        // 2. Tambah fisik kolom di tabel nilai_ujian
+        db.query(`ALTER TABLE nilai_ujian ADD COLUMN ?? INT DEFAULT NULL`, [id_kategori], (errAlter) => {
+            if (errAlter) return res.status(500).json(errAlter);
+            res.json({ message: "Kategori dan kolom database berhasil ditambahkan!" });
+        });
+    });
+});
+
+// Hapus Kategori (Otomatis ALTER TABLE DROP COLUMN)
+app.delete('/api/kategori/:id', (req, res) => {
+    const id_kategori = req.params.id;
+
+    // 1. Hapus dari daftar kategori
+    db.query("DELETE FROM kategori_nilai WHERE id_kategori = ?", [id_kategori], (err) => {
+        if (err) return res.status(500).json(err);
+
+        // 2. Hapus fisik kolom dari tabel nilai_ujian
+        db.query(`ALTER TABLE nilai_ujian DROP COLUMN ??`, [id_kategori], (errAlter) => {
+            if (errAlter) return res.status(500).json(errAlter);
+            res.json({ message: "Kategori beserta semua nilainya berhasil dihapus!" });
+        });
+    });
+});
+
+// ==========================================
+// API RESET DATA TAHUNAN
+// ==========================================
+app.delete('/api/siswa_all', (req, res) => {
+    // Hapus nilai_ujian dulu agar aman dari constraint relasi
+    db.query('DELETE FROM nilai_ujian', (err1) => {
+        if (err1) return res.status(500).json({ error: err1.message });
+        
+        // Setelah nilai terhapus, hapus semua data siswa
+        db.query('DELETE FROM siswa', (err2) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ message: "Semua data siswa dan nilai berhasil dikosongkan!" });
+        });
     });
 });
 
