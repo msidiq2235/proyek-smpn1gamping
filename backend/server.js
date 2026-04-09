@@ -133,20 +133,25 @@ app.delete('/api/siswa/:nis', (req, res) => {
 
 // 9. API Rata-rata Sekolah
 app.get('/api/rata_sekolah', (req, res) => {
-    const sql = `
-        SELECT 
-            mapel, 
-            ROUND(AVG(NULLIF(latihan1, 0)), 1) as latihan1, 
-            ROUND(AVG(NULLIF(latihan2, 0)), 1) as latihan2, 
-            ROUND(AVG(NULLIF(latihan3, 0)), 1) as latihan3, 
-            ROUND(AVG(NULLIF(latihan4, 0)), 1) as latihan4, 
-            ROUND(AVG(NULLIF(latihan5, 0)), 1) as latihan5 
-        FROM nilai_ujian 
-        GROUP BY mapel
-    `;
-    db.query(sql, (err, result) => {
+    // Cari tahu dulu kategori apa saja yang sedang aktif
+    db.query("SELECT id_kategori FROM kategori_nilai", (err, cats) => {
         if (err) return res.status(500).json(err);
-        res.json(result); 
+        
+        if (cats.length === 0) {
+            return res.json([]); // Jika belum ada kategori, kembalikan array kosong
+        }
+
+        // Buat query dinamis: ROUND(AVG(NULLIF(kat_123, 0)), 1) as kat_123, ...
+        const avgSelects = cats.map(c => 
+            `ROUND(AVG(NULLIF(${c.id_kategori}, 0)), 1) as ${c.id_kategori}`
+        ).join(', ');
+
+        const sql = `SELECT mapel, ${avgSelects} FROM nilai_ujian GROUP BY mapel`;
+        
+        db.query(sql, (err, result) => {
+            if (err) return res.status(500).json(err);
+            res.json(result); 
+        });
     });
 });
 
@@ -227,6 +232,20 @@ app.delete('/api/siswa_all', (req, res) => {
             if (err2) return res.status(500).json({ error: err2.message });
             res.json({ message: "Semua data siswa dan nilai berhasil dikosongkan!" });
         });
+    });
+});
+
+app.get('/api/judul', (req, res) => {
+    db.query("SELECT judul FROM pengaturan_judul WHERE id = 1", (err, result) => {
+        if (err) return res.status(500).json(err);
+        res.json(result[0] || { judul: 'Laporan Hasil Evaluasi' });
+    });
+});
+
+app.put('/api/judul', (req, res) => {
+    db.query("UPDATE pengaturan_judul SET judul = ? WHERE id = 1", [req.body.judul], (err) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Judul cetak laporan berhasil diubah!" });
     });
 });
 

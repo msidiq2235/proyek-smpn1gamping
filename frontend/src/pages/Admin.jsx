@@ -21,7 +21,10 @@ function Admin() {
   const [daftarKategori, setDaftarKategori] = useState([]);
   const [modeEditKategori, setModeEditKategori] = useState(false);
   const [kategoriEditData, setKategoriEditData] = useState([]);
-  const [kategoriBaru, setKategoriBaru] = useState(''); // State untuk input nambah kategori
+  const [kategoriBaru, setKategoriBaru] = useState(''); 
+
+  // State Judul Laporan
+  const [judulLaporan, setJudulLaporan] = useState('Laporan Hasil Evaluasi');
 
   const [inputKolektif, setInputKolektif] = useState({
     nis: '', indo: '', mtk: '', inggris: '', ipa: ''
@@ -31,8 +34,12 @@ function Admin() {
     if (role !== 'admin') navigate('/beranda');
     muatDaftarSiswa();
     muatKategori();
+    muatJudul(); // Panggil judul laporan saat halaman dimuat
   }, [role, navigate]);
 
+  // ==========================================
+  // FUNGSI MEMUAT DATA
+  // ==========================================
   const muatDaftarSiswa = async () => {
     try {
       const [resSiswa, resNilai] = await Promise.all([
@@ -54,13 +61,22 @@ function Admin() {
       const res = await axios.get('http://localhost:5000/api/kategori');
       setDaftarKategori(res.data);
       setKategoriEditData(res.data); 
-      // Set default ke kategori pertama yang ada (kalau belum diset)
       if(res.data.length > 0 && !kategori) {
           setKategori(res.data[0].id_kategori);
       }
     } catch (err) { console.error("Gagal memuat kategori:", err); }
   };
 
+  const muatJudul = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/judul');
+      if (res.data?.judul) setJudulLaporan(res.data.judul);
+    } catch (err) { console.error("Gagal memuat judul:", err); }
+  };
+
+  // ==========================================
+  // FUNGSI KATEGORI & JUDUL (PENGATURAN)
+  // ==========================================
   const simpanKategori = async () => {
     try {
       for (const item of kategoriEditData) {
@@ -73,7 +89,6 @@ function Admin() {
     } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal memperbarui kategori.' }); }
   };
 
-  // --- FUNGSI BARU: TAMBAH KATEGORI ---
   const tambahKategori = async () => {
     if (!kategoriBaru) return;
     try {
@@ -85,21 +100,29 @@ function Admin() {
     } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menambah kategori.' }); }
   };
 
-  // --- FUNGSI BARU: HAPUS KATEGORI ---
   const hapusKategori = async (id, nama) => {
     if (window.confirm(`⚠️ Yakin ingin menghapus kategori "${nama}"? SEMUA NILAI SISWA DI KATEGORI INI AKAN HILANG PERMANEN!`)) {
       try {
         setPesan({ tipe: 'info', isi: '⏳ Sedang menghapus kolom dari database...' });
         await axios.delete(`http://localhost:5000/api/kategori/${id}`);
-        
-        if (kategori === id) setKategori(''); // Reset tampilan jika yg dihapus sedang aktif
+        if (kategori === id) setKategori(''); 
         muatKategori();
-        muatDaftarSiswa(); // Refresh nilai yg ada di memori
+        muatDaftarSiswa(); 
         setPesan({ tipe: 'warning', isi: `Kategori "${nama}" telah dihapus.` });
       } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal menghapus kategori.' }); }
     }
   };
 
+  const simpanJudul = async () => {
+    try {
+      await axios.put('http://localhost:5000/api/judul', { judul: judulLaporan });
+      setPesan({ tipe: 'success', isi: 'Judul laporan berhasil diperbarui!' });
+    } catch (err) { setPesan({ tipe: 'danger', isi: 'Gagal memperbarui judul.' }); }
+  };
+
+  // ==========================================
+  // FUNGSI SISWA & NILAI
+  // ==========================================
   const handleCariKolektif = async (nisInput, kategoriInput) => {
     const cleanNIS = nisInput.trim();
     if (cleanNIS.length > 2) {
@@ -299,7 +322,7 @@ function Admin() {
                         <option key={kat.id_kategori} value={kat.id_kategori}>{kat.nama_kategori}</option>
                       ))}
                     </select>
-                    <button type="button" className="btn btn-outline-secondary" onClick={() => setModeEditKategori(!modeEditKategori)} title="Atur Kategori">⚙️</button>
+                    <button type="button" className="btn btn-outline-secondary" onClick={() => setModeEditKategori(!modeEditKategori)} title="Pengaturan">⚙️</button>
                   </div>
                 </div>
 
@@ -315,12 +338,12 @@ function Admin() {
                 <button className="btn btn-success w-100 fw-bold" disabled={!namaTerdeteksi || !kategori}>💾 Simpan Nilai {namaKategoriAktif}</button>
               </form>
 
-              {/* PANEL PENGATURAN KATEGORI */}
+              {/* PANEL PENGATURAN KATEGORI & JUDUL */}
               {modeEditKategori && (
                 <div className="mt-4 p-3 bg-light rounded border border-secondary shadow-sm">
                   <h6 className="fw-bold mb-3">⚙️ Pengaturan Kategori Nilai</h6>
                   
-                  {/* List Edit & Hapus */}
+                  {/* List Edit & Hapus Kategori */}
                   {kategoriEditData.map((kat, index) => (
                     <div className="mb-2 d-flex align-items-center gap-2" key={kat.id_kategori}>
                       <span className="badge bg-secondary" style={{ width: '70px' }}>Urutan {index + 1}</span>
@@ -339,11 +362,27 @@ function Admin() {
 
                   <hr />
                   
-                  {/* Form Tambah Baru */}
+                  {/* Form Tambah Kategori Baru */}
                   <h6 className="fw-bold mb-2 text-success">➕ Tambah Kategori Ujian Baru</h6>
                   <div className="d-flex gap-2">
                     <input type="text" className="form-control form-control-sm" placeholder="Misal: Ujian Praktek, PTS, dll." value={kategoriBaru} onChange={(e) => setKategoriBaru(e.target.value)} />
                     <button type="button" className="btn btn-sm btn-success text-nowrap" onClick={tambahKategori} disabled={!kategoriBaru}>Tambah</button>
+                  </div>
+
+                  <hr />
+
+                  {/* Form Edit Judul Laporan */}
+                  <h6 className="fw-bold mb-2 text-primary">📝 Pengaturan Judul Laporan (Cetak)</h6>
+                  <div className="d-flex gap-2">
+                    <input 
+                      type="text" 
+                      className="form-control form-control-sm" 
+                      value={judulLaporan} 
+                      onChange={(e) => setJudulLaporan(e.target.value)} 
+                    />
+                    <button type="button" className="btn btn-sm btn-primary text-nowrap" onClick={simpanJudul}>
+                      Simpan Judul
+                    </button>
                   </div>
 
                   <div className="d-flex justify-content-end mt-4">
