@@ -244,30 +244,55 @@ function Admin() {
 
   const handleImportExcel = (e) => {
     const file = e.target.files[0];
-    if (!file || !kategori) return alert("Pilih kategori terlebih dahulu!");
+    if (!file || !kategori) return alert("Pilih kategori nilai terlebih dahulu!");
+    
     const reader = new FileReader();
     reader.onload = async (evt) => {
       const data = new Uint8Array(evt.target.result);
       const workbook = XLSX.read(data, { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
+      
       try {
-        setPesan({ tipe: 'info', isi: '🚀 Sedang memproses...' });
+        setPesan({ tipe: 'info', isi: '🚀 Sedang memproses... Jangan tutup halaman ini.' });
+        let adaError = false;
+
         for (const row of jsonData) {
+          // 1. Simpan Siswa (Abaikan error jika siswa sudah ada / duplikat NIS)
           try {
             await axios.post(`${API_BASE_URL}/tambah_siswa.php`, {
               nis: row.nis, nama: row.nama || `Siswa ${row.nis}`,
               password: row.nis, rombel: row.rombel || '-', asal_sekolah: row.asal_sekolah || '-'
             });
-          } catch (err) { }
+          } catch (err) { /* Biarkan saja, kemungkinan NIS sudah ada di database */ }
+          
+          // 2. Simpan Nilai Mapel
           for (const m of daftarMapel) {
-            const payload = { nis: row.nis, mapel: m.nama_mapel, [kategori]: row[m.nama_mapel] || 0 };
-            await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, payload);
+            // Mengambil nilai dari Excel berdasarkan nama mapel (Harus sama persis)
+            const nilaiDariExcel = row[m.nama_mapel] || 0; 
+            const payload = { nis: row.nis, mapel: m.nama_mapel, [kategori]: nilaiDariExcel };
+            
+            try {
+              // Tambahkan await dan try-catch di dalam sini agar tidak berhenti jika 1 gagal
+              await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, payload);
+            } catch (err) {
+              console.error(`Gagal simpan nilai ${m.nama_mapel} untuk NIS ${row.nis}:`, err);
+              adaError = true;
+            }
           }
         }
-        setPesan({ tipe: 'success', isi: `🎉 Import Selesai.` });
+        
+        if (adaError) {
+           setPesan({ tipe: 'warning', isi: `⚠️ Import selesai, tapi ada beberapa nilai gagal masuk. Cek Console.` });
+        } else {
+           setPesan({ tipe: 'success', isi: `🎉 Import Selesai. Seluruh data berhasil masuk!` });
+        }
+        
         muatDaftarSiswa(); 
-      } catch (err) { setPesan({ tipe: 'danger', isi: '❌ Import gagal!' }); }
+      } catch (err) { 
+        console.error("Error struktur Excel:", err);
+        setPesan({ tipe: 'danger', isi: '❌ Import gagal! Pastikan file Excel valid.' }); 
+      }
     };
     reader.readAsArrayBuffer(file);
   };

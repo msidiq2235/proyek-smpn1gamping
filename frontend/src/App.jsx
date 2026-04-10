@@ -10,7 +10,7 @@ import Admin from './pages/Admin';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/proyek-smpn1gamping/dist/">
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/beranda" element={<Beranda />} />
