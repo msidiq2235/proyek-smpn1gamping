@@ -20,25 +20,40 @@ function DataNilai() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Penting: Reset data ke array kosong sebelum fetch agar tidak ada data sisa
         setDataMapel([]);
         
-        const [resSiswa, resNilai, resRata, resKategori, resJudul] = await Promise.all([
+        // 🚀 1. PANGGIL MASTER MAPEL (get_mapel.php) DI SINI
+        const [resSiswa, resNilai, resRata, resKategori, resJudul, resMapel] = await Promise.all([
           axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`),
           axios.get(`${API_BASE_URL}/get_nilai.php?nis=${nis}`),
           axios.get(`${API_BASE_URL}/get_rata_sekolah.php`),
           axios.get(`${API_BASE_URL}/get_kategori.php`),
-          axios.get(`${API_BASE_URL}/get_judul.php`)
+          axios.get(`${API_BASE_URL}/get_judul.php`),
+          axios.get(`${API_BASE_URL}/get_mapel.php`) // <-- Kunci utamanya
         ]);
 
         if (resSiswa.data?.profil) setProfil(resSiswa.data.profil);
-        
-        // Pastikan hasil adalah Array untuk menghindari error .map()
-        setDataMapel(Array.isArray(resNilai.data) ? resNilai.data : []);
-        setRataSekolah(Array.isArray(resRata.data) ? resRata.data : []);
-        setDaftarKategori(Array.isArray(resKategori.data) ? resKategori.data : []);
-        
         if (resJudul.data?.judul) setJudulLaporan(resJudul.data.judul);
+        setDaftarKategori(Array.isArray(resKategori.data) ? resKategori.data : []);
+
+        // 🚀 2. LOGIKA FILTERING (Mencegah Mapel Hantu)
+        const masterMapel = Array.isArray(resMapel.data) ? resMapel.data : [];
+        const nilaiSiswa = Array.isArray(resNilai.data) ? resNilai.data : [];
+
+        // Gabungkan list mapel resmi admin dengan nilai yang didapat siswa
+        const dataGabungan = masterMapel.map(master => {
+          const nilaiCocok = nilaiSiswa.find(n => n.mapel === master.nama_mapel);
+          return {
+            mapel: master.nama_mapel,
+            ...nilaiCocok // Jika belum ada nilai, tetap muncul namanya. Jika mapel dihapus admin, akan lenyap.
+          };
+        });
+        setDataMapel(dataGabungan);
+
+        // Saring rata-rata sekolah agar mapel yang sudah dihapus tidak nyangkut di grafik
+        const rataSekolahAsli = Array.isArray(resRata.data) ? resRata.data : [];
+        const rataTersaring = rataSekolahAsli.filter(r => masterMapel.some(m => m.nama_mapel === r.mapel));
+        setRataSekolah(rataTersaring);
 
       } catch (err) {
         console.error("Gagal memuat laporan:", err);
@@ -57,7 +72,6 @@ function DataNilai() {
     return total / arr.length;
   };
 
-  // Guarding Chart: Jika data kosong, berikan array kosong agar tidak crash
   const chartSiswa = {
     labels: dataMapel.length > 0 ? dataMapel.map(d => d.mapel || 'Mapel') : [],
     datasets: daftarKategori.map((kat, index) => ({
@@ -98,7 +112,6 @@ function DataNilai() {
       <nav className="navbar bg-primary mb-4 py-3 d-print-none">
         <div className="container px-4">
           <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
-            {/* Hapus garis miring di depan agar terbaca di subfolder dist XAMPP */}
             <img src="logo_smpn1gmp.png" alt="logo" style={{ width: '32px' }} />
             Portal Akademik
           </span>
