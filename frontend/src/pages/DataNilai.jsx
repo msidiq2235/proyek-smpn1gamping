@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bar } from 'react-chartjs-2';
 import axios from 'axios';
 import 'chart.js/auto';
-import { API_BASE_URL } from '../apiConfig'; // Import URL Pusat
+import { API_BASE_URL } from '../apiConfig';
 
 function DataNilai() {
   const [dataMapel, setDataMapel] = useState([]);
@@ -19,7 +19,10 @@ function DataNilai() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // PERUBAHAN DI SINI: Memanggil API PHP
+        setLoading(true);
+        // Penting: Reset data ke array kosong sebelum fetch agar tidak ada data sisa
+        setDataMapel([]);
+        
         const [resSiswa, resNilai, resRata, resKategori, resJudul] = await Promise.all([
           axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`),
           axios.get(`${API_BASE_URL}/get_nilai.php?nis=${nis}`),
@@ -29,13 +32,16 @@ function DataNilai() {
         ]);
 
         if (resSiswa.data?.profil) setProfil(resSiswa.data.profil);
-        if (Array.isArray(resNilai.data)) setDataMapel(resNilai.data);
-        if (Array.isArray(resRata.data)) setRataSekolah(resRata.data);
-        if (Array.isArray(resKategori.data)) setDaftarKategori(resKategori.data);
+        
+        // Pastikan hasil adalah Array untuk menghindari error .map()
+        setDataMapel(Array.isArray(resNilai.data) ? resNilai.data : []);
+        setRataSekolah(Array.isArray(resRata.data) ? resRata.data : []);
+        setDaftarKategori(Array.isArray(resKategori.data) ? resKategori.data : []);
+        
         if (resJudul.data?.judul) setJudulLaporan(resJudul.data.judul);
 
       } catch (err) {
-        console.error("Gagal memuat laporan dari server PHP:", err);
+        console.error("Gagal memuat laporan:", err);
       } finally {
         setLoading(false);
       }
@@ -46,31 +52,32 @@ function DataNilai() {
   }, [nis]);
 
   const hitungRerata = (arr, key) => {
-    if (!arr.length) return 0;
+    if (!arr || !arr.length) return 0;
     const total = arr.reduce((a, b) => a + (parseFloat(b[key]) || 0), 0);
     return total / arr.length;
   };
 
+  // Guarding Chart: Jika data kosong, berikan array kosong agar tidak crash
   const chartSiswa = {
-    labels: dataMapel.map(d => d.mapel),
+    labels: dataMapel.length > 0 ? dataMapel.map(d => d.mapel || 'Mapel') : [],
     datasets: daftarKategori.map((kat, index) => ({
       label: kat.nama_kategori,
       backgroundColor: warnaGrafik[index % warnaGrafik.length],
-      data: dataMapel.map(d => d[kat.id_kategori] || 0)
+      data: dataMapel.map(d => parseFloat(d[kat.id_kategori]) || 0)
     }))
   };
 
   const chartPerbandingan = {
-    labels: daftarKategori.map(k => k.nama_kategori),
-    datasets: rataSekolah.map((item, index) => ({
-      label: item.mapel,
+    labels: daftarKategori.length > 0 ? daftarKategori.map(k => k.nama_kategori) : [],
+    datasets: rataSekolah.length > 0 ? rataSekolah.map((item, index) => ({
+      label: item.mapel || 'Mapel',
       backgroundColor: warnaGrafik[index % warnaGrafik.length],
-      data: daftarKategori.map(kat => item[kat.id_kategori] || 0)
-    }))
+      data: daftarKategori.map(kat => parseFloat(item[kat.id_kategori]) || 0)
+    })) : []
   };
 
   if (loading) {
-    return <div className="text-center p-5 fw-bold">Memuat laporan...</div>;
+    return <div className="text-center p-5 fw-bold">Memuat laporan akademik...</div>;
   }
 
   return (
@@ -91,7 +98,8 @@ function DataNilai() {
       <nav className="navbar bg-primary mb-4 py-3 d-print-none">
         <div className="container px-4">
           <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
-            <img src="/logo_smpn1gmp.png" alt="logo" style={{ width: '32px' }} />
+            {/* Hapus garis miring di depan agar terbaca di subfolder dist XAMPP */}
+            <img src="logo_smpn1gmp.png" alt="logo" style={{ width: '32px' }} />
             Portal Akademik
           </span>
           <div className="ms-auto d-flex gap-2">
@@ -105,7 +113,7 @@ function DataNilai() {
         <div className="card bg-white shadow-sm p-4">
           
           <div className="text-center border-bottom pb-3 mb-3">
-            <img src="/logo_smpn1gmp.png" style={{ width: '60px' }} alt="logo" />
+            <img src="logo_smpn1gmp.png" style={{ width: '60px' }} alt="logo" />
             <h5 className="fw-bold mt-2 mb-0">SMP NEGERI 1 GAMPING</h5>
             <small className="text-muted">YOGYAKARTA</small>
             <hr className="mt-2 mb-2" />
@@ -113,9 +121,9 @@ function DataNilai() {
           </div>
 
           <div className="mb-3 small">
-            <b>Nama :</b> {profil.nama} &nbsp;&nbsp; | &nbsp;&nbsp;
-            <b>NIS :</b> {profil.nis} &nbsp;&nbsp; | &nbsp;&nbsp;
-            <b>Kelas :</b> {profil.rombel}
+            <b>Nama :</b> {profil.nama || '-'} &nbsp;&nbsp; | &nbsp;&nbsp;
+            <b>NIS :</b> {profil.nis || '-'} &nbsp;&nbsp; | &nbsp;&nbsp;
+            <b>Kelas :</b> {profil.rombel || '-'}
           </div>
 
           <div className="table-responsive">
@@ -132,20 +140,28 @@ function DataNilai() {
                       <th key={kat.id_kategori}>{kat.nama_kategori}</th>
                     ))
                   ) : (
-                    <th>Belum ada kategori</th>
+                    <th>Kategori Belum Ada</th>
                   )}
                 </tr>
               </thead>
               <tbody>
-                {dataMapel.map((item, index) => (
-                  <tr key={index}>
-                    <td>{index + 1}</td>
-                    <td className="text-start">{item.mapel}</td>
-                    {daftarKategori.map(kat => (
-                      <td key={kat.id_kategori}>{item[kat.id_kategori] ?? '-'}</td>
-                    ))}
+                {dataMapel.length > 0 ? (
+                  dataMapel.map((item, index) => (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td className="text-start">{item.mapel}</td>
+                      {daftarKategori.map(kat => (
+                        <td key={kat.id_kategori}>{item[kat.id_kategori] ?? '-'}</td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={daftarKategori.length + 2} className="text-center p-3 text-muted">
+                      Tidak ada data nilai yang aktif.
+                    </td>
                   </tr>
-                ))}
+                )}
                 
                 {dataMapel.length > 0 && daftarKategori.length > 0 && (
                   <tr className="fw-bold bg-primary bg-opacity-10">
@@ -162,20 +178,27 @@ function DataNilai() {
           </div>
 
           <h6 className="text-center fw-bold small">Visualisasi Nilai Pribadi</h6>
-          <div style={{ height: '245px' }} className="mb-3">
-            <Bar data={chartSiswa} options={{ maintainAspectRatio: false }} />
+          <div style={{ height: '245px' }} className="mb-3 chart-container">
+            {dataMapel.length > 0 ? (
+              <Bar data={chartSiswa} options={{ maintainAspectRatio: false }} />
+            ) : (
+              <div className="text-center text-muted small">Grafik tidak tersedia</div>
+            )}
           </div>
 
           <h6 className="text-center fw-bold small">Perbandingan Rata-rata Sekolah</h6>
-          <div style={{ height: '245px' }} className="mb-3">
-            <Bar data={chartPerbandingan} options={{ maintainAspectRatio: false }} />
+          <div style={{ height: '245px' }} className="mb-3 chart-container">
+            {rataSekolah.length > 0 ? (
+              <Bar data={chartPerbandingan} options={{ maintainAspectRatio: false }} />
+            ) : (
+              <div className="text-center text-muted small">Grafik perbandingan tidak tersedia</div>
+            )}
           </div>
 
           <div className="mt-3 border-top pt-2 small d-flex justify-content-between">
             <span>Portal Akademik SMPN 1 Gamping</span>
             <span>Dicetak: {new Date().toLocaleDateString('id-ID')}</span>
           </div>
-
         </div>
       </div>
     </div>

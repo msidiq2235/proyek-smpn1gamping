@@ -1,6 +1,6 @@
 <?php
 // 1. PASTIKAN NAMA FILE INI BENAR (koneksi.php bukan config.php)
-require 'koneksi.php'; 
+require 'config.php'; 
 
 $data = json_decode(file_get_contents("php://input"), true);
 

@@ -266,10 +266,24 @@ function Admin() {
             });
           } catch (err) { /* Biarkan saja, kemungkinan NIS sudah ada di database */ }
           
-          // 2. Simpan Nilai Mapel
+          // 2. Simpan Nilai Mapel dengan Pembaca Pintar
           for (const m of daftarMapel) {
-            // Mengambil nilai dari Excel berdasarkan nama mapel (Harus sama persis)
-            const nilaiDariExcel = row[m.nama_mapel] || 0; 
+            let nilaiDariExcel = 0;
+
+            // Logika pendeteksi berbagai nama kolom di Excel
+            if (m.nama_mapel === 'Bahasa Indonesia') {
+              nilaiDariExcel = row['Bahasa Indonesia'] || row.indo || row.indonesia || row['B. Indo'] || 0;
+            } else if (m.nama_mapel === 'Matematika') {
+              nilaiDariExcel = row['Matematika'] || row.mtk || row.matematika || 0;
+            } else if (m.nama_mapel === 'Bahasa Inggris') {
+              nilaiDariExcel = row['Bahasa Inggris'] || row.inggris || row.english || row['B. Inggris'] || 0;
+            } else if (m.nama_mapel === 'IPA') {
+              nilaiDariExcel = row['IPA'] || row.ipa || 0;
+            } else {
+              // Jika mapel selain di atas, cari berdasarkan namanya yang sama persis
+              nilaiDariExcel = row[m.nama_mapel] || 0;
+            }
+
             const payload = { nis: row.nis, mapel: m.nama_mapel, [kategori]: nilaiDariExcel };
             
             try {
@@ -298,7 +312,6 @@ function Admin() {
   };
 
   const namaKategoriAktif = daftarKategori.find(k => k.id_kategori === kategori)?.nama_kategori || 'Pilih Kategori';
-
   return (
     <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '50px' }}>
       <nav className="navbar navbar-expand-lg bg-primary shadow-sm py-3 mb-5">
