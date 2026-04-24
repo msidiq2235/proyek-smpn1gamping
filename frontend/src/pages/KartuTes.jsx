@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import QRCode from 'react-qr-code';
-import { API_BASE_URL } from '../apiConfig'; // Import konfigurasi URL API
+import { API_BASE_URL } from '../apiConfig';
 
 function KartuTes() {
-  // Inisialisasi state dengan objek kosong agar tidak null
   const [profil, setProfil] = useState({
     nis: '-',
     password: '-',
@@ -15,23 +14,34 @@ function KartuTes() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Warna Biru Navy Pilihan Bos
+  const colors = {
+    primary: '#023874',
+    secondary: '#B8860B', // Aksen Emas Tua
+    light: '#f4f7f6',
+    white: '#ffffff'
+  };
+
   useEffect(() => {
     const nis = localStorage.getItem('nis');
     const role = localStorage.getItem('role');
 
-    // Jika yang login Admin, langsung hentikan loading tanpa ambil data API
     if (role === 'admin' || nis === 'admin') {
+      setProfil({
+        nis: 'ADMIN-001',
+        password: '*****',
+        nama: 'Administrator Sistem',
+        rombel: 'All Access'
+      });
       setLoading(false);
       return;
     }
 
-    // Jika Siswa tapi NIS tidak ada
     if (!nis) {
       setLoading(false);
       return navigate('/');
     }
 
-    // PERUBAHAN: Memanggil API PHP untuk mengambil profil
     axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`)
       .then(res => {
         if (res.data && res.data.profil) {
@@ -42,95 +52,106 @@ function KartuTes() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  // Loading hanya tampil sebentar saat fetch data
-  if (loading) return <div className="text-center mt-5 fw-bold text-primary">Memuat Kartu Tes...</div>;
+  if (loading) return <div className="text-center mt-5">Memuat Kartu...</div>;
 
   return (
-    <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '50px' }}>
+    <div style={{ backgroundColor: colors.light, minHeight: '100vh', paddingBottom: '50px' }}>
       
       <style>
         {`
           @media print {
-            body, .bg-primary, .bg-light, .badge, .card {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
+            body { background-color: white !important; }
+            .d-print-none { display: none !important; }
+            .card { border: 1px solid #ddd !important; box-shadow: none !important; }
+            .bg-primary { background-color: ${colors.primary} !important; -webkit-print-color-adjust: exact; }
+          }
+          .card-token {
+            border: 1px dashed ${colors.primary};
+            background-color: #f8f9fa;
+            font-family: 'Courier New', Courier, monospace;
           }
         `}
       </style>
 
-      {/* Navbar */}
-      <nav className="navbar navbar-expand-lg bg-primary shadow-sm py-3 mb-5 d-print-none">
+      {/* Navbar Simple */}
+      <nav className="navbar navbar-dark shadow-sm py-3 mb-5 d-print-none" style={{ backgroundColor: colors.primary }}>
         <div className="container px-4">
-          <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-2">
-            <img src="/logo_smpn1gmp.png" alt="Logo" style={{ width: '32px', height: '32px' }} />
-            Portal Akademik
+          <span className="navbar-brand fw-bold d-flex align-items-center gap-2">
+            <img src="logosekolah.png" alt="Logo" style={{ width: '30px' }} />
+            Kartu Ujian
           </span>
           <div className="ms-auto d-flex gap-2">
-            <button onClick={() => window.print()} className="btn btn-success btn-sm fw-bold">🖨️ Cetak</button>
-            <Link to="/beranda" className="btn btn-light text-primary btn-sm fw-bold">⬅ Beranda</Link>
+            <button onClick={() => window.print()} className="btn btn-success btn-sm fw-bold px-3">Print Kartu</button>
+            <Link to="/beranda" className="btn btn-light btn-sm fw-bold px-3">Kembali</Link>
           </div>
         </div>
       </nav>
 
-      <div className="container px-4" style={{ maxWidth: '750px' }}>
-        <div className="card border-0 shadow-sm" style={{ borderRadius: '20px', overflow: 'hidden' }}>
-          <div className="bg-primary text-white text-center py-3" style={{ borderBottom: '5px solid #ffc107' }}>
-            <h4 className="fw-bold mb-0 text-uppercase">Kartu Peserta Ujian</h4>
-            <p className="mb-0 small opacity-75">SMP Negeri 1 Gamping</p>
+      <div className="container px-4" style={{ maxWidth: '700px' }}>
+        <div className="card border-0 shadow-sm" style={{ borderRadius: '15px', overflow: 'hidden' }}>
+          
+          {/* Header Kartu */}
+          <div className="p-4 text-white text-center" style={{ backgroundColor: colors.primary, borderBottom: `4px solid ${colors.secondary}` }}>
+            <div className="d-flex align-items-center justify-content-center gap-3 mb-2">
+                <img src="logosekolah.png" alt="Logo" style={{ width: '50px' }} />
+                <div className="text-start">
+                    <h5 className="fw-bold mb-0 text-uppercase" style={{ letterSpacing: '1px' }}>Kartu Peserta Ujian</h5>
+                    <p className="mb-0 small">SMP NEGERI 1 GAMPING</p>
+                </div>
+            </div>
           </div>
 
-          <div className="card-body p-4 p-md-5 bg-white">
-            <div className="row align-items-center">
-              <div className="col-md-8 col-7 border-end pe-4">
-                <table className="table table-borderless mb-0 fs-6">
-                  <tbody>
-                    <tr>
-                      <td width="40%" className="text-muted fw-bold pb-3">User ID</td>
-                      <td width="5%">:</td>
-                      <td className="fw-bold fs-5 text-primary pb-3">{profil.nis}</td>
-                    </tr>
-                    <tr>
-                      <td className="text-muted fw-bold pb-3">Password</td>
-                      <td>:</td>
-                      <td className="pb-3">
-                        <span className="badge bg-light text-dark border px-3 py-2">
-                          {profil.password}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="text-muted fw-bold pb-3">Nama Lengkap</td>
-                      <td>:</td>
-                      <td className="fw-bold pb-3">{profil.nama}</td>
-                    </tr>
-                    <tr>
-                      <td className="text-muted fw-bold pb-3">Rombel</td>
-                      <td>:</td>
-                      <td className="fw-bold pb-3">{profil.rombel}</td>
-                    </tr>
-                  </tbody>
-                </table>
+          <div className="card-body p-4 p-md-5">
+            <div className="row">
+              {/* Data Kiri */}
+              <div className="col-md-8 border-end">
+                <div className="mb-3">
+                  <label className="small text-muted fw-bold text-uppercase">Nomor Induk Siswa (NIS)</label>
+                  <div className="fs-4 fw-bold" style={{ color: colors.primary }}>{profil.nis}</div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="small text-muted fw-bold text-uppercase">Nama Lengkap</label>
+                  <div className="fw-bold text-dark">{profil.nama}</div>
+                </div>
+
+                <div className="row">
+                    <div className="col-6">
+                        <label className="small text-muted fw-bold text-uppercase">Kelas</label>
+                        <div className="fw-bold text-dark">{profil.rombel}</div>
+                    </div>
+                    <div className="col-6">
+                        <label className="small text-muted fw-bold text-uppercase">Password</label>
+                        <div className="card-token px-2 py-1 text-center rounded fw-bold text-dark">
+                            {profil.password}
+                        </div>
+                    </div>
+                </div>
               </div>
-              <div className="col-md-4 col-5 text-center ps-md-4">
-                <div className="bg-light p-2 d-inline-block border rounded-4 shadow-sm">
-                  {/* Gunakan nilai default jika nis kosong agar QR Code tidak error */}
-                  <QRCode value={profil.nis || "N/A"} size={110} level="M" />
+
+              {/* QR Code Kanan */}
+              <div className="col-md-4 d-flex align-items-center justify-content-center mt-4 mt-md-0">
+                <div className="text-center">
+                    <div className="p-2 border rounded bg-white shadow-sm mb-2">
+                        <QRCode value={profil.nis || "N/A"} size={120} />
+                    </div>
+                    <small className="text-muted" style={{ fontSize: '10px' }}>SCAN UNTUK VERIFIKASI</small>
                 </div>
               </div>
             </div>
           </div>
-          <div className="card-footer bg-light text-center text-muted small py-3">
-            <em>Kartu ini wajib dibawa saat pelaksanaan evaluasi akademik.</em>
+
+          {/* Footer Kartu */}
+          <div className="bg-light p-3 text-center border-top">
+            <p className="mb-0 text-muted small" style={{ fontStyle: 'italic' }}>
+              "Simpan kartu ini baik-baik. Kehilangan kartu dapat menghambat proses ujian."
+            </p>
           </div>
         </div>
-        
-        {/* Pesan Tambahan khusus Admin */}
-        {(localStorage.getItem('role') === 'admin' || localStorage.getItem('nis') === 'admin') && (
-          <div className="alert alert-warning mt-4 d-print-none text-center small">
-            <strong>Mode Admin:</strong> Menampilkan layout kartu kosong untuk preview.
-          </div>
-        )}
+
+        <p className="text-center mt-4 text-muted small d-print-none">
+          *Gunakan kertas ukuran A4 atau F4 untuk hasil cetak terbaik.
+        </p>
       </div>
     </div>
   );

@@ -10,8 +10,14 @@ function Beranda() {
   const [profil, setProfil] = useState({ nama: 'Memuat...', rombel: '-', nis: '-' });
   const navigate = useNavigate();
 
+  const colors = {
+    primary: '#023874',    // Biru Navy Elit
+    secondary: '#B8860B',  // Emas Tua (Aksen)
+    bgLight: '#F4F1EA',    // Krem Putih (Kesan Kertas Mahal)
+    white: '#ffffff'
+  };
+
   useEffect(() => {
-    // 1. Logika Waktu
     const updateWaktu = () => {
       const sekarang = new Date();
       const opsiTanggal = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
@@ -20,21 +26,16 @@ function Beranda() {
     updateWaktu();
     const interval = setInterval(updateWaktu, 60000);
 
-    // 2. Logika Profil Dinamis
     const fetchProfil = async () => {
       if (role === 'admin' || nis === 'admin') {
         setProfil({ nama: 'Administrator', rombel: 'Sistem', nis: 'Admin-Root' });
         return;
       }
-
       if (nis) {
         try {
           const res = await axios.get(`${API_BASE_URL}/get_profil.php?nis=${nis}`);
-          if (res.data && res.data.profil) {
-            setProfil(res.data.profil);
-          }
+          if (res.data && res.data.profil) setProfil(res.data.profil);
         } catch (err) {
-          console.error("Gagal ambil data:", err);
           setProfil({ nama: 'User', rombel: '-', nis: nis });
         }
       }
@@ -45,121 +46,144 @@ function Beranda() {
   }, [nis, role]);
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
+    if (window.confirm("Konfirmasi: Keluar dari sistem manajemen akademik?")) {
+      localStorage.clear();
+      navigate('/');
+    }
   };
 
   return (
-    <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '50px' }}>
+    <div style={{ backgroundColor: colors.bgLight, minHeight: '100vh', paddingBottom: '100px', fontFamily: "'Inter', sans-serif" }}>
       
       <style>
         {`
-          .menu-card {
-            transition: all 0.3s ease;
-            border-radius: 16px;
-          }
-          .menu-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 30px rgba(13, 110, 253, 0.15) !important;
-            border-color: #0d6efd !important;
-          }
-          .menu-icon-wrapper {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px auto;
-            transition: all 0.3s ease;
-          }
-          .menu-card:hover .menu-icon-wrapper {
-            background-color: #0d6efd !important;
-            color: white !important;
-            transform: scale(1.1);
-          }
-          .exam-card:hover .menu-icon-wrapper {
-            background-color: #ff4757 !important;
-          }
+          .nav-custom { background-color: ${colors.primary}; border-bottom: 4px solid ${colors.secondary}; }
+          .welcome-banner { background: linear-gradient(135deg, ${colors.primary} 0%, #011f41 100%); border-radius: 20px; overflow: hidden; }
+          .menu-card-elit { border: none; border-radius: 15px; transition: all 0.4s ease; background: #ffffff; }
+          .menu-card-elit:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important; }
+          .icon-box { width: 60px; height: 60px; background-color: ${colors.bgLight}; color: ${colors.primary}; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
+          .admin-bar-card { background-color: ${colors.white}; border-radius: 15px; border: 1px solid rgba(0,0,0,0.05); transition: 0.3s; }
+          .admin-bar-card:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
         `}
       </style>
 
-      <nav className="navbar navbar-expand-lg bg-white shadow-sm py-3 mb-4">
+      {/* NAVBAR */}
+      <nav className="navbar nav-custom shadow-sm py-3 mb-5">
         <div className="container px-4">
-          <span className="navbar-brand fw-bold text-primary d-flex align-items-center gap-2">
-            <img src="/logo_smpn1gmp.png" alt="Logo" style={{ width: '35px', height: '35px' }} />
-            Portal Akademik SMPN 1 Gamping
+          <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
+            <img src="logosekolah.png" alt="Logo" style={{ width: '40px' }} />
+            <div className="d-none d-md-block">
+              <span style={{ fontSize: '1.1rem', letterSpacing: '1px' }}>DASHBOARD</span>
+              <small className="d-block text-white-50 fw-normal" style={{ fontSize: '0.7rem' }}>SMP NEGERI 1 GAMPING</small>
+            </div>
           </span>
-          <span className="navbar-text text-muted small d-none d-md-block">
-            📅 {waktu}
-          </span>
+          <div className="ms-auto">
+            <button onClick={handleLogout} className="btn btn-sm btn-outline-light rounded-pill px-4 fw-bold shadow-sm">LOGOUT</button>
+          </div>
         </div>
       </nav>
 
-      <div className="container px-4" style={{ maxWidth: '1100px' }}>
+      <div className="container px-4" style={{ maxWidth: '1000px' }}>
         
-        <div className="bg-primary text-white p-4 p-md-5 mb-5 shadow-sm" style={{ borderRadius: '20px', background: 'linear-gradient(135deg, #0d6efd 0%, #0043a8 100%)' }}>
-          <h2 className="fw-bold mb-1">Selamat Datang, {profil.nama}! 👋</h2>
-          <p className="mb-0 text-white-50 fs-5">Kelas {profil.rombel} | NIS: {profil.nis}</p>
+        {/* HERO BANNER */}
+        <div className="welcome-banner p-4 p-md-5 mb-5 shadow-lg text-white">
+          <div className="row align-items-center">
+            <div className="col-md-8">
+              <h1 className="fw-bold mb-2">
+                Selamat Datang, {profil.nama} 
+                {(role === 'admin' || nis === 'admin') && <span className="ms-2 badge bg-white text-dark fw-bold" style={{fontSize:'0.4em', verticalAlign:'middle'}}>ADMIN</span>}
+              </h1>
+              <p className="lead opacity-75 mb-0">E-Learning & Academic Management System</p>
+            </div>
+            <div className="col-md-4 text-md-end mt-4 mt-md-0">
+               <span className="badge px-4 py-2 rounded-pill shadow-sm fw-bold" style={{ backgroundColor: colors.secondary, color: colors.primary }}>
+                 {role === 'admin' ? 'SYSTEM ADMINISTRATOR' : `SISWA - KELAS ${profil.rombel}`}
+               </span>
+            </div>
+          </div>
         </div>
 
-        {/* Grid Menu Utama (Sekarang 5 Kolom) */}
-        <div className="row g-3 justify-content-center">
-          
-          <div className="col-6 col-md-4 col-lg">
-            <Link to="/profil" className="card menu-card border border-light shadow-sm p-4 text-center text-decoration-none bg-white h-100">
-              <div className="menu-icon-wrapper bg-light text-primary fs-2">👤</div>
-              <h6 className="text-dark fw-bold mb-0">Profil Siswa</h6>
+        {/* MENU UTAMA SISWA (Atas) */}
+        <div className="row g-4">
+          <div className="col-md-4">
+            <Link to="/profil" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
+              <div className="icon-box">👤</div>
+              <h5 className="fw-bold text-dark mb-2">Profil Siswa</h5>
+              <p className="text-muted small">Kelola informasi biografi dan data administrasi kesiswaan Anda.</p>
+            </Link>
+          </div>
+          <div className="col-md-4">
+            <Link to="/kartu-tes" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
+              <div className="icon-box">🪪</div>
+              <h5 className="fw-bold text-dark mb-2">Kartu Ujian</h5>
+              <p className="text-muted small">Akses kartu identitas resmi untuk mengikuti pelaksanaan evaluasi.</p>
+            </Link>
+          </div>
+          <div className="col-md-4">
+            <Link to="/data-nilai" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
+              <div className="icon-box">📊</div>
+              <h5 className="fw-bold text-dark mb-2">Laporan Nilai</h5>
+              <p className="text-muted small">Tinjau akumulasi perolehan hasil belajar dan evaluasi akhir di sini.</p>
             </Link>
           </div>
 
-          <div className="col-6 col-md-4 col-lg">
-            <Link to="/kartu-tes" className="card menu-card border border-light shadow-sm p-4 text-center text-decoration-none bg-white h-100">
-              <div className="menu-icon-wrapper bg-light text-primary fs-2">🪪</div>
-              <h6 className="text-dark fw-bold mb-0">Kartu Tes</h6>
-            </Link>
-          </div>
-
-          <div className="col-6 col-md-4 col-lg">
-            <Link to="/data-nilai" className="card menu-card border border-light shadow-sm p-4 text-center text-decoration-none bg-white h-100">
-              <div className="menu-icon-wrapper bg-light text-primary fs-2">📊</div>
-              <h6 className="text-dark fw-bold mb-0">Data Nilai</h6>
-            </Link>
-          </div>
-
-          {/* MENU BARU: UJIAN ONLINE */}
-          <div className="col-6 col-md-4 col-lg">
-            <Link to="/daftar-ujian" className="card menu-card exam-card border border-light shadow-sm p-4 text-center text-decoration-none bg-white h-100">
-              <div className="menu-icon-wrapper bg-danger bg-opacity-10 text-danger fs-2">📝</div>
-              <h6 className="text-dark fw-bold mb-0">Ujian Online</h6>
-              <span className="badge bg-danger rounded-pill mt-2" style={{ fontSize: '10px' }}>Baru</span>
-            </Link>
-          </div>
-
-          <div className="col-6 col-md-4 col-lg">
-            <button onClick={handleLogout} className="card menu-card border border-light shadow-sm p-4 text-center bg-white h-100 w-100 border-0">
-              <div className="menu-icon-wrapper bg-secondary bg-opacity-10 text-secondary fs-2">🚪</div>
-              <h6 className="text-secondary fw-bold mb-0">Logout</h6>
-            </button>
-          </div>
-
+          {/* Tombol CBT Siswa (Hanya tampil jika bukan admin) */}
+          {role !== 'admin' && (
+            <div className="col-md-12 mt-4">
+                <Link to="/daftar-ujian" className="card menu-card-elit p-4 shadow-sm text-decoration-none border-0" style={{ background: `linear-gradient(to right, #fff, ${colors.bgLight})`, borderLeft: `6px solid ${colors.primary}` }}>
+                    <div className="row align-items-center">
+                        <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.primary, color: '#fff' }}>📝</div></div>
+                        <div className="col">
+                            <h4 className="fw-bold text-dark mb-1">Ujian CBT Online</h4>
+                            <p className="text-muted m-0 small">Masuk ke ruang pengerjaan ujian online terintegrasi.</p>
+                        </div>
+                        <div className="col-auto"><span className="badge rounded-pill px-4 py-2 fw-bold shadow-sm text-white" style={{backgroundColor: colors.primary}}>MULAI UJIAN</span></div>
+                    </div>
+                </Link>
+            </div>
+          )}
         </div>
 
-        {/* Panel Admin (Tetap sama) */}
+        {/* --- AREA AKSES KONTROL ADMIN (Bawah) --- */}
         {(role === 'admin' || nis === 'admin') && (
-          <div className="row mt-5">
-            <div className="col-12">
-              <Link to="/admin" className="text-decoration-none">
-                <div className="card border-0 shadow-sm p-4 text-center" style={{ borderRadius: '20px', backgroundColor: '#fff3cd' }}>
-                  <div className="d-flex align-items-center justify-content-center gap-3">
-                    <div className="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', fontSize: '20px' }}>⚙️</div>
-                    <div className="text-start">
-                      <h5 className="fw-bold text-dark mb-0">Panel Administrasi</h5>
-                      <p className="text-muted small mb-0">Kelola data seluruh siswa, nilai, dan sistem ujian</p>
+          <div className="mt-5 pt-4">
+            <div className="d-flex align-items-center gap-3 mb-4 text-muted fw-bold text-uppercase" style={{ letterSpacing: '2px', fontSize: '0.8rem' }}>
+               <span>Akses Kontrol Admin</span>
+               <div className="flex-grow-1" style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.1)' }}></div>
+            </div>
+            
+            <div className="row g-3">
+              {/* MENU KELOLA CBT (Turun ke bawah sesuai gambar) */}
+              <div className="col-12 mb-2">
+                <Link to="/daftar-ujian" className="text-decoration-none">
+                  <div className="card admin-bar-card p-4 shadow-sm">
+                    <div className="row align-items-center">
+                        <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.primary, color: '#fff' }}>⚙️</div></div>
+                        <div className="col">
+                            <h5 className="fw-bold text-dark mb-1">Kelola CBT</h5>
+                            <p className="text-muted small mb-0">Kelola daftar ujian, butir soal, dan durasi waktu pengerjaan.</p>
+                        </div>
+                        <div className="col-auto"><span className="btn btn-sm fw-bold rounded-pill px-4 text-white" style={{backgroundColor: colors.primary}}>KELOLA SOAL</span></div>
                     </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </div>
+
+              {/* MENU MANAJEMEN NILAI UJIAN */}
+              <div className="col-12">
+                <Link to="/admin" className="text-decoration-none">
+                  <div className="card admin-bar-card p-4 shadow-sm">
+                    <div className="row align-items-center">
+                        <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.secondary, color: '#fff' }}>📜</div></div>
+                        <div className="col">
+                            <h5 className="fw-bold text-dark mb-1">Manajemen Nilai Ujian</h5>
+                            <p className="text-muted small mb-0">Input nilai kategori ujian, kelola mapel utama, dan konfigurasi judul laporan.</p>
+                        </div>
+                        <div className="col-auto"><span className="btn btn-sm btn-dark fw-bold rounded-pill px-4">Buka Panel</span></div>
+                    </div>
+                  </div>
+                </Link>
+              </div>
             </div>
           </div>
         )}

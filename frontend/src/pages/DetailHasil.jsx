@@ -10,15 +10,21 @@ function DetailHasil() {
     const [isSaving, setIsSaving] = useState(false);
     const navigate = useNavigate();
 
+    const colors = {
+        primary: '#023874',
+        secondary: '#B8860B',
+        bgLight: '#F4F1EA',
+    };
+
     useEffect(() => {
         fetchDetail();
-    }, []);
+    }, [id_hasil]);
 
     const fetchDetail = async () => {
         try {
             const res = await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=get_detail_hasil&id_hasil=${id_hasil}`);
             setData(res.data);
-            setNilaiBaru(res.data.info.nilai_total); // Set initial value
+            setNilaiBaru(res.data.info.nilai_total);
         } catch (err) {
             console.error("Gagal memuat detail:", err);
         }
@@ -35,7 +41,7 @@ function DetailHasil() {
             });
             if (res.data.success) {
                 alert("Nilai berhasil diperbarui!");
-                fetchDetail(); // Refresh data
+                fetchDetail();
             }
         } catch (err) {
             alert("Gagal memperbarui nilai.");
@@ -45,9 +51,9 @@ function DetailHasil() {
     };
 
     if (!data) return (
-        <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: colors.bgLight }}>
             <div className="spinner-border text-primary" role="status"></div>
-            <span className="ms-2">Memuat Data Audit...</span>
+            <span className="ms-2 fw-bold">Memuat Data Audit...</span>
         </div>
     );
 
@@ -57,35 +63,31 @@ function DetailHasil() {
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 className="fw-bold m-0 text-dark">🔍 Detail Jawaban Siswa</h4>
-                    <p className="text-muted small m-0">Audit & Koreksi Manual</p>
+                    <p className="text-muted small m-0">Audit & Koreksi Manual Hasil CBT</p>
                 </div>
-                <button onClick={() => navigate(-1)} className="btn btn-outline-secondary btn-sm fw-bold px-3 rounded-pill">
+                <button onClick={() => navigate(-1)} className="btn btn-outline-secondary btn-sm fw-bold px-3 rounded-pill shadow-sm">
                     ⬅ Kembali
                 </button>
             </div>
 
-            {/* PANEL BERI NILAI (Sticky Top) */}
+            {/* PANEL UPDATE NILAI */}
             <div className="card mb-4 border-0 shadow-sm sticky-top" style={{ borderRadius: '15px', top: '20px', zIndex: 1020 }}>
                 <div className="card-body bg-dark text-white rounded-3 p-3">
                     <div className="row align-items-center">
                         <div className="col-md-6">
-                            <div className="small opacity-75">Siswa: {data.info.nama || 'User'}</div>
-                            <h6 className="fw-bold m-0 text-truncate">Skor Sistem: {data.info.nilai_total}</h6>
+                            <div className="small opacity-75 text-uppercase fw-bold" style={{ letterSpacing: '1px' }}>Peserta: {data.info.nama || 'Siswa'}</div>
+                            <h6 className="fw-bold m-0">Skor Sistem: <span className="text-warning">{data.info.nilai_total}</span></h6>
                         </div>
                         <div className="col-md-6 mt-2 mt-md-0">
                             <div className="input-group">
-                                <span className="input-group-text bg-primary text-white border-0 fw-bold">Update Skor:</span>
+                                <span className="input-group-text bg-primary text-white border-0 fw-bold">Koreksi:</span>
                                 <input 
                                     type="number" 
-                                    className="form-control fw-bold" 
+                                    className="form-control fw-bold border-0" 
                                     value={nilaiBaru} 
                                     onChange={(e) => setNilaiBaru(e.target.value)}
                                 />
-                                <button 
-                                    className="btn btn-primary fw-bold" 
-                                    onClick={handleUpdateNilai}
-                                    disabled={isSaving}
-                                >
+                                <button className="btn btn-primary fw-bold" onClick={handleUpdateNilai} disabled={isSaving}>
                                     {isSaving ? '...' : 'SIMPAN'}
                                 </button>
                             </div>
@@ -96,27 +98,29 @@ function DetailHasil() {
 
             {/* List Soal */}
             {data.soal.map((s, index) => (
-                <div key={index} className="card mb-4 border-0 shadow-sm" style={{ borderRadius: '15px' }}>
-                    <div className="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
-                        <span className="badge bg-light text-dark border px-3 py-2 rounded-pill">Soal #{index + 1}</span>
-                        <span className="badge bg-secondary text-uppercase" style={{ fontSize: '10px' }}>{s.tipe_soal}</span>
+                <div key={index} className="card mb-4 border-0 shadow-sm overflow-hidden" style={{ borderRadius: '15px' }}>
+                    <div className="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <span className="badge bg-light text-dark border px-3 py-2 rounded-pill fw-bold">Butir Soal #{index + 1}</span>
+                        <span className="badge text-uppercase px-3" style={{ fontSize: '10px', backgroundColor: colors.primary }}>{s.tipe_soal}</span>
                     </div>
                     
                     <div className="card-body">
                         {/* Pertanyaan */}
-                        <div className="p-3 bg-light rounded-3 mb-3 border-start border-4 border-primary">
-                            <p className="fw-bold m-0">{s.pertanyaan}</p>
+                        <div className="p-3 bg-light rounded-3 mb-4 border-start border-4 border-primary">
+                            <p className="fw-bold m-0" style={{ color: colors.primary }}>{s.pertanyaan}</p>
                             {s.gambar && (
-                                <img 
-                                    src={`${API_BASE_URL.replace('/exam', '')}/uploads/exam/${s.gambar}`} 
-                                    alt="Soal" 
-                                    className="img-fluid rounded mt-2 border" 
-                                    style={{ maxHeight: '200px' }} 
-                                />
+                                <div className="mt-3 text-center bg-white p-2 rounded border">
+                                    <img 
+                                        src={`${API_BASE_URL.replace('/exam', '')}/uploads/exam/${s.gambar}`} 
+                                        alt="Soal" 
+                                        className="img-fluid rounded shadow-sm" 
+                                        style={{ maxHeight: '250px' }} 
+                                    />
+                                </div>
                             )}
                         </div>
 
-                        {/* --- PILGAN --- */}
+                        {/* --- RENDER PILGAN --- */}
                         {s.tipe_soal === 'pilgan' && (
                             <div className="list-group">
                                 {s.opsi.map((o, idx) => {
@@ -127,11 +131,11 @@ function DetailHasil() {
                                     if (isDipilih && !isKunci) cls = "list-group-item-danger border-danger";
                                     
                                     return (
-                                        <div key={idx} className={`list-group-item mb-1 rounded-3 d-flex justify-content-between align-items-center ${cls}`}>
+                                        <div key={idx} className={`list-group-item mb-2 rounded-3 d-flex justify-content-between align-items-center ${cls} shadow-sm border-0`}>
                                             <span className={isKunci ? "fw-bold" : ""}>{o.teks_opsi}</span>
                                             <div className="d-flex gap-2">
                                                 {isDipilih && <span className="badge bg-dark rounded-pill">Pilihan Siswa</span>}
-                                                {isKunci && <span className="badge bg-success rounded-pill">Kunci</span>}
+                                                {isKunci && <span className="badge bg-success rounded-pill">Kunci Jawaban</span>}
                                             </div>
                                         </div>
                                     );
@@ -139,45 +143,48 @@ function DetailHasil() {
                             </div>
                         )}
 
-                        {/* --- ESAI --- */}
+                        {/* --- RENDER ESAI --- */}
                         {s.tipe_soal === 'esai' && (
                             <div className="row g-3">
                                 <div className="col-md-6">
-                                    <label className="small fw-bold text-muted mb-1">JAWABAN SISWA:</label>
-                                    <div className="p-3 bg-white border rounded-3 h-100" style={{ minHeight: '100px', whiteSpace: 'pre-line' }}>
-                                        {s.jawaban_siswa ? s.jawaban_siswa : <em className="text-danger">Kosong</em>}
+                                    <label className="small fw-bold text-muted mb-2 text-uppercase">Jawaban Siswa:</label>
+                                    <div className="p-3 bg-white border border-2 rounded-4 h-100 shadow-sm" style={{ minHeight: '120px', whiteSpace: 'pre-line' }}>
+                                        {s.jawaban_siswa ? s.jawaban_siswa : <em className="text-danger">Siswa tidak menjawab</em>}
                                     </div>
                                 </div>
                                 <div className="col-md-6">
-                                    <label className="small fw-bold text-success mb-1">KUNCI REFERENSI:</label>
-                                    <div className="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 h-100" style={{ minHeight: '100px', whiteSpace: 'pre-line' }}>
-                                        {s.kunci_esai ? s.kunci_esai : <em className="text-muted small">Tidak ada pedoman</em>}
+                                    <label className="small fw-bold text-success mb-2 text-uppercase">Pedoman Kunci:</label>
+                                    <div className="p-3 bg-success bg-opacity-10 border border-success border-2 rounded-4 h-100 shadow-sm" style={{ minHeight: '120px', whiteSpace: 'pre-line' }}>
+                                        {s.kunci_esai ? s.kunci_esai : <em className="text-muted small">Tidak ada kunci referensi</em>}
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* --- MATCHING --- */}
+                        {/* --- RENDER MATCHING (FIXED ERROR) --- */}
                         {s.tipe_soal === 'matching' && (
-                            <div className="table-responsive rounded-3 border">
-                                <table className="table table-sm table-hover align-middle mb-0">
-                                    <thead className="table-light">
-                                        <tr className="small">
-                                            <th className="ps-3">Kiri</th>
-                                            <th>Kunci</th>
-                                            <th>Pilihan Siswa</th>
+                            <div className="table-responsive rounded-4 border shadow-sm">
+                                <table className="table table-hover align-middle mb-0">
+                                    <thead className="table-dark">
+                                        <tr className="small text-uppercase">
+                                            <th className="ps-3 py-3">Pernyataan (Kiri)</th>
+                                            <th>Pasangan Benar (Kanan)</th>
+                                            <th className="pe-3">Jawaban Siswa</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {s.opsi.map((o, idx) => {
-                                            const jwbSiswa = s.jawaban_siswa_matching[o.id_opsi];
+                                            // PROTEKSI: Cek apakah jawaban_siswa_matching ada, jika tidak gunakan objek kosong {}
+                                            const matchingData = s.jawaban_siswa_matching || {};
+                                            const jwbSiswa = matchingData[o.id_opsi];
                                             const isBenar = jwbSiswa === o.kunci_matching;
+
                                             return (
-                                                <tr key={idx} className={isBenar ? "table-success bg-opacity-10" : "table-danger bg-opacity-10"}>
-                                                    <td className="ps-3">{o.teks_opsi}</td>
-                                                    <td className="fw-bold text-success">{o.kunci_matching}</td>
-                                                    <td className={isBenar ? 'text-success fw-bold' : 'text-danger fw-bold'}>
-                                                        {jwbSiswa || '(Kosong)'}
+                                                <tr key={idx} className={isBenar ? "table-success" : (jwbSiswa ? "table-danger" : "")}>
+                                                    <td className="ps-3 fw-bold">{o.teks_opsi}</td>
+                                                    <td className="text-success fw-bold">{o.kunci_matching}</td>
+                                                    <td className={`pe-3 fw-bold ${isBenar ? 'text-success' : 'text-danger'}`}>
+                                                        {jwbSiswa || <em className="small opacity-50">(Kosong)</em>}
                                                     </td>
                                                 </tr>
                                             );

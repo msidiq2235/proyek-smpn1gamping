@@ -8,6 +8,14 @@ function AdminExam() {
     const navigate = useNavigate();
     const editId = searchParams.get('edit');
 
+    // Palette Warna Eksklusif
+    const colors = {
+        primary: '#023874',    // Biru Navy Elit
+        secondary: '#B8860B',  // Emas Tua
+        bgLight: '#F4F1EA',    // Krem Putih
+        white: '#ffffff'
+    };
+
     // --- STATE INFO UJIAN ---
     const [judul, setJudul] = useState('');
     const [mapelId, setMapelId] = useState('');
@@ -92,7 +100,7 @@ function AdminExam() {
         });
         if (res.data.success) {
             if (!editId) setIdUjianBaru(res.data.id_ujian);
-            alert("Informasi Ujian Berhasil Disimpan!");
+            alert("Konfigurasi Ujian Berhasil Disimpan!");
             setShowInfoUjian(false);
         }
     };
@@ -143,164 +151,207 @@ function AdminExam() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             if (res.data.success) {
-                alert("Soal Berhasil Disimpan!");
+                alert("Butir Soal Berhasil Disimpan!");
                 resetFormSoal();
                 fetchExistingSoal();
             }
-        } catch (err) { alert("Error saat menyimpan soal."); }
+        } catch (err) { alert("Sistem gagal menyimpan soal."); }
     };
 
     return (
-        <div className="container-fluid py-4 px-md-5 bg-light min-vh-100">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h3 className="fw-bold m-0 text-dark">{editId ? '🛠️ Kelola Butir Soal' : '✨ Buat Ujian Baru'}</h3>
-                <button onClick={() => navigate('/daftar-ujian')} className="btn btn-outline-danger btn-sm fw-bold px-3">Keluar</button>
-            </div>
+        <div style={{ backgroundColor: colors.bgLight, minHeight: '100vh', paddingBottom: '50px', fontFamily: "'Inter', sans-serif" }}>
+            
+            {/* NAVBAR ELIT */}
+            <nav className="navbar shadow-sm py-3 mb-5" style={{ backgroundColor: colors.primary, borderBottom: `4px solid ${colors.secondary}` }}>
+                <div className="container-fluid px-md-5">
+                    <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
+                        <img src="logosekolah.png" alt="Logo" style={{ width: '35px' }} />
+                        <span style={{ letterSpacing: '1px', fontSize: '1.1rem' }}>CONSOLE MANAJEMEN UJIAN</span>
+                    </span>
+                    <button onClick={() => navigate('/daftar-ujian')} className="btn btn-outline-light btn-sm fw-bold px-4 rounded-pill shadow-sm">
+                        ⬅ KELUAR
+                    </button>
+                </div>
+            </nav>
 
-            <div className="row">
-                <div className={editId ? "col-lg-8" : "col-12 mx-auto"} style={{ maxWidth: editId ? '' : '800px' }}>
-                    
-                    {/* --- I. INFO UJIAN --- */}
-                    <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: '15px' }}>
-                        <div className="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
-                             style={{ cursor: 'pointer' }} onClick={() => setShowInfoUjian(!showInfoUjian)}>
-                            <h6 className="fw-bold m-0 text-primary text-uppercase">I. Data Utama Ujian</h6>
-                            <span className="text-muted small">{showInfoUjian ? '▲ Tutup' : '▼ Edit Info'}</span>
-                        </div>
-                        {showInfoUjian && (
-                            <div className="card-body border-top bg-light">
-                                <div className="row g-3">
-                                    <div className="col-md-6">
-                                        <label className="small fw-bold">NAMA UJIAN</label>
-                                        <input className="form-control" value={judul} onChange={e => setJudul(e.target.value)} />
-                                    </div>
-                                    <div className="col-md-3">
-                                        <label className="small fw-bold text-danger">SKOR MAKS</label>
-                                        <input className="form-control fw-bold border-danger" type="number" value={targetNilai} onChange={e => setTargetNilai(e.target.value)} />
-                                    </div>
-                                    <div className="col-md-3">
-                                        <label className="small fw-bold text-primary">JATAH PERCOBAAN</label>
-                                        <input className="form-control fw-bold border-primary" type="number" value={maxAttempt} onChange={e => setMaxAttempt(e.target.value)} />
-                                    </div>
-
-                                    <div className="col-md-6">
-                                        <label className="small fw-bold">MATA PELAJARAN</label>
-                                        <div className="input-group">
-                                            <select className="form-select" value={mapelId} onChange={e => setMapelId(e.target.value)}>
-                                                <option value="">-- Pilih --</option>
-                                                {listMapel.map(m => <option key={m.id_exam_mapel} value={m.id_exam_mapel}>{m.nama_mapel}</option>)}
-                                            </select>
-                                            <button className="btn btn-outline-primary" onClick={() => navigate('/manage-mapel-exam')}>⚙️</button>
+            <div className="container-fluid px-md-5">
+                <div className="row g-4">
+                    <div className={editId ? "col-lg-8" : "col-lg-10 mx-auto"}>
+                        
+                        {/* --- I. INFO UJIAN --- */}
+                        <div className="card shadow-sm border-0 mb-4 overflow-hidden" style={{ borderRadius: '15px' }}>
+                            <div className="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
+                                 style={{ cursor: 'pointer', borderLeft: `6px solid ${colors.secondary}` }} onClick={() => setShowInfoUjian(!showInfoUjian)}>
+                                <div>
+                                    <h6 className="fw-bold m-0 text-dark text-uppercase" style={{ letterSpacing: '1px' }}>I. Konfigurasi Utama Ujian</h6>
+                                    {editId && <small className="text-muted">Sedang mengelola: <strong>{judul}</strong></small>}
+                                </div>
+                                <span className="badge bg-light text-primary rounded-pill px-3 py-2">{showInfoUjian ? '▲ TUTUP' : '▼ BUKA'}</span>
+                            </div>
+                            {showInfoUjian && (
+                                <div className="card-body border-top bg-white p-4">
+                                    <div className="row g-3">
+                                        <div className="col-md-6">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Nama Ujian / Evaluasi</label>
+                                            <input className="form-control border-0 bg-light py-2 px-3" style={{borderRadius: '10px'}} value={judul} onChange={e => setJudul(e.target.value)} placeholder="Contoh: Penilaian Harian Matematika" />
+                                        </div>
+                                        <div className="col-md-3">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Target Skor (Max)</label>
+                                            <input className="form-control border-0 bg-light py-2 px-3 fw-bold" style={{borderRadius: '10px'}} type="number" value={targetNilai} onChange={e => setTargetNilai(e.target.value)} />
+                                        </div>
+                                        <div className="col-md-3">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Jatah Percobaan</label>
+                                            <input className="form-control border-0 bg-light py-2 px-3 fw-bold" style={{borderRadius: '10px'}} type="number" value={maxAttempt} onChange={e => setMaxAttempt(e.target.value)} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Mata Pelajaran</label>
+                                            <div className="input-group">
+                                                <select className="form-select border-0 bg-light py-2 px-3" style={{borderRadius: '10px 0 0 10px'}} value={mapelId} onChange={e => setMapelId(e.target.value)}>
+                                                    <option value="">-- Pilih Mata Pelajaran --</option>
+                                                    {listMapel.map(m => <option key={m.id_exam_mapel} value={m.id_exam_mapel}>{m.nama_mapel}</option>)}
+                                                </select>
+                                                <button className="btn btn-dark" onClick={() => navigate('/manage-mapel-exam')}>⚙️</button>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Durasi Waktu (Menit)</label>
+                                            <input className="form-control border-0 bg-light py-2 px-3" style={{borderRadius: '10px'}} type="number" value={durasi} onChange={e => setDurasi(e.target.value)} />
+                                        </div>
+                                        <div className="col-12 text-end mt-4">
+                                            <button className="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm" style={{ backgroundColor: colors.primary }} onClick={simpanInfoUjian}>SIMPAN KONFIGURASI</button>
                                         </div>
                                     </div>
-                                    <div className="col-md-6">
-                                        <label className="small fw-bold">DURASI (MENIT)</label>
-                                        <input className="form-control" type="number" value={durasi} onChange={e => setDurasi(e.target.value)} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* --- II. INPUT SOAL --- */}
+                        {idUjianBaru && (
+                            <div className="card shadow-sm border-0 bg-white mb-4 overflow-hidden" style={{ borderRadius: '15px' }}>
+                                <div className="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+                                     style={{ borderLeft: `6px solid ${colors.primary}` }}>
+                                    <h6 className="fw-bold m-0 text-dark text-uppercase" style={{ letterSpacing: '1px' }}>
+                                        <span className="badge me-2" style={{backgroundColor: colors.primary}}>SOAL NO. {nomorAktif}</span> 
+                                        {idSoalEdit ? 'MODIFIKASI BUTIR SOAL' : 'TAMBAH BUTIR SOAL BARU'}
+                                    </h6>
+                                    {idSoalEdit && <button className="btn btn-sm btn-link text-danger text-decoration-none fw-bold" onClick={resetFormSoal}>+ BATAL & BUAT BARU</button>}
+                                </div>
+
+                                <div className="card-body p-4 border-top">
+                                    <div className="row g-4 mb-4">
+                                        <div className="col-md-8">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Unggah Gambar (Opsional)</label>
+                                            <input type="file" className="form-control border-0 bg-light" onChange={handleFileChange} />
+                                        </div>
+                                        <div className="col-md-4">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Bobot Poin Soal</label>
+                                            <input type="number" className="form-control border-0 bg-light fw-bold text-center" value={bobotSoal} onChange={e => setBobotSoal(e.target.value)} />
+                                        </div>
                                     </div>
 
-                                    <div className="col-12 text-end">
-                                        <button className="btn btn-primary fw-bold px-4 shadow-sm" onClick={simpanInfoUjian}>Simpan Info</button>
+                                    {preview && (
+                                        <div className="mb-4 text-center position-relative d-inline-block w-100 p-3 bg-light rounded-4 border border-dashed">
+                                            <img src={preview} alt="preview" style={{ maxHeight: '200px', objectFit: 'contain' }} className="rounded shadow-sm" />
+                                            <button className="btn btn-sm btn-danger rounded-circle position-absolute top-0 end-0 m-2" onClick={() => {setGambar(null); setPreview(null);}}>✕</button>
+                                        </div>
+                                    )}
+
+                                    <div className="mb-4">
+                                        <label className="small fw-bold text-muted text-uppercase mb-2">Isi Pertanyaan</label>
+                                        <textarea className="form-control border-0 bg-light px-3 py-3" style={{borderRadius: '12px'}} rows="4" value={pertanyaan} onChange={e => setPertanyaan(e.target.value)} placeholder="Ketikkan teks pertanyaan di sini..." />
                                     </div>
+
+                                    <div className="mb-4 text-center p-3 bg-light rounded-4">
+                                        <label className="small fw-bold text-muted text-uppercase mb-3 d-block">Pilih Tipe Evaluasi</label>
+                                        <div className="btn-group w-100 shadow-sm rounded-pill overflow-hidden" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                                            {['pilgan', 'esai', 'matching'].map(t => (
+                                                <button key={t} className={`btn py-2 fw-bold ${tipe === t ? 'btn-primary' : 'btn-white'}`}
+                                                    style={{ backgroundColor: tipe === t ? colors.primary : '#fff', color: tipe === t ? '#fff' : '#555', border: 'none' }}
+                                                    onClick={() => { setTipe(t); setOpsi([{ teks: '', kunci: '', is_benar: 0 }]); }}>{t.toUpperCase()}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {tipe === 'esai' ? (
+                                        <div className="mb-4">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Kunci Jawaban / Referensi (Esai)</label>
+                                            <textarea className="form-control border-0 bg-light px-3 py-3" style={{borderRadius: '12px', borderLeft: '4px solid #198754'}} rows="3" value={kunciEsai} onChange={e => setKunciEsai(e.target.value)} placeholder="Tuliskan kata kunci untuk mempermudah koreksi..." />
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 rounded-4 bg-light mb-4 border">
+                                            <h6 className="fw-bold small text-muted mb-4 text-uppercase" style={{letterSpacing:'1px'}}>Pilihan Jawaban & Kunci:</h6>
+                                            {opsi.map((o, i) => (
+                                                <div key={i} className="d-flex gap-2 mb-3 align-items-center">
+                                                    <input className="form-control border-0 shadow-sm py-2" placeholder={tipe === 'matching' ? "Teks Kiri" : "Isi pilihan..."} value={o.teks} onChange={e => { const n = [...opsi]; n[i].teks = e.target.value; setOpsi(n); }} />
+                                                    {tipe === 'matching' && <input className="form-control border-0 shadow-sm py-2" placeholder="Teks Kanan" value={o.kunci} onChange={e => { const n = [...opsi]; n[i].kunci = e.target.value; setOpsi(n); }} />}
+                                                    {tipe === 'pilgan' && (
+                                                        <button className={`btn fw-bold px-4 ${o.is_benar ? 'btn-success' : 'btn-outline-secondary'}`} 
+                                                            style={{borderRadius: '8px'}}
+                                                            onClick={() => {
+                                                                const n = opsi.map((item, idx) => ({ ...item, is_benar: idx === i ? 1 : 0 }));
+                                                                setOpsi(n);
+                                                            }}>{o.is_benar ? 'KUNCI' : 'SET'}</button>
+                                                    )}
+                                                    <button className="btn btn-outline-danger border-0" onClick={() => setOpsi(opsi.filter((_, idx) => idx !== i))}>✕</button>
+                                                </div>
+                                            ))}
+                                            <button className="btn btn-sm fw-bold text-primary mt-2" onClick={() => setOpsi([...opsi, { teks: '', kunci: '', is_benar: 0 }])}>+ TAMBAH OPSI BARU</button>
+                                        </div>
+                                    )}
+
+                                    <button className="btn w-100 fw-bold py-3 shadow-lg rounded-pill" style={{ backgroundColor: colors.primary, color: '#fff', letterSpacing: '1px' }} onClick={simpanSoal}>
+                                        {idSoalEdit ? 'UPDATE BUTIR SOAL' : 'PUBLIKASIKAN SOAL'}
+                                    </button>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* --- II. INPUT SOAL --- */}
-                    {idUjianBaru && (
-                        <div className="card p-4 shadow-sm border-0 bg-white mb-4" style={{ borderRadius: '15px' }}>
-                            <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                <h5 className="fw-bold m-0"><span className="badge bg-success me-2">{nomorAktif}</span> {idSoalEdit ? 'Edit Soal' : 'Soal Baru'}</h5>
-                                {idSoalEdit && <button className="btn btn-sm btn-link text-danger text-decoration-none fw-bold" onClick={resetFormSoal}>+ Batal & Baru</button>}
-                            </div>
-
-                            <div className="row g-3 mb-3">
-                                <div className="col-md-8">
-                                    <label className="small fw-bold text-muted">GAMBAR (OPSIONAL):</label>
-                                    <input type="file" className="form-control" onChange={handleFileChange} />
+                    {/* --- III. NAVIGASI --- */}
+                    {idUjianBaru && editId && (
+                        <div className="col-lg-4">
+                            <div className="card shadow-sm border-0 sticky-top overflow-hidden" style={{ borderRadius: '15px', top: '20px' }}>
+                                <div className="card-header bg-white py-3 border-0" style={{ borderLeft: `6px solid ${colors.secondary}` }}>
+                                    <h6 className="fw-bold m-0 text-dark text-uppercase" style={{ letterSpacing: '1px' }}>Navigasi Butir Soal</h6>
                                 </div>
-                                <div className="col-md-4">
-                                    <label className="small fw-bold text-primary">BOBOT POIN:</label>
-                                    <input type="number" className="form-control border-primary fw-bold" value={bobotSoal} onChange={e => setBobotSoal(e.target.value)} />
-                                </div>
-                            </div>
-
-                            {preview && (
-                                <div className="mb-3 position-relative d-inline-block border rounded p-1 bg-light text-center w-100">
-                                    <img src={preview} alt="preview" style={{ maxHeight: '150px' }} className="rounded" />
-                                    <button className="btn btn-sm btn-danger position-absolute top-0 end-0" onClick={() => {setGambar(null); setPreview(null);}}>✕</button>
-                                </div>
-                            )}
-
-                            <div className="mb-3">
-                                <label className="small fw-bold text-muted">PERTANYAAN:</label>
-                                <textarea className="form-control" rows="4" value={pertanyaan} onChange={e => setPertanyaan(e.target.value)} />
-                            </div>
-
-                            <div className="mb-3">
-                                <label className="small fw-bold text-muted mb-2">TIPE:</label>
-                                <div className="d-flex gap-2">
-                                    {['pilgan', 'esai', 'matching'].map(t => (
-                                        <button key={t} className={`btn btn-sm flex-grow-1 py-2 fw-bold ${tipe === t ? 'btn-dark' : 'btn-outline-dark'}`}
-                                            onClick={() => { setTipe(t); setOpsi([{ teks: '', kunci: '', is_benar: 0 }]); }}>{t.toUpperCase()}</button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {tipe === 'esai' ? (
-                                <div className="mb-4">
-                                    <label className="small fw-bold text-success">KUNCI REFERENSI:</label>
-                                    <textarea className="form-control border-success bg-light" rows="3" value={kunciEsai} onChange={e => setKunciEsai(e.target.value)} placeholder="Tuliskan kata kunci/jawaban..." />
-                                </div>
-                            ) : (
-                                <div className="p-3 rounded-4 bg-light border mb-4">
-                                    <h6 className="fw-bold small text-muted mb-3">OPSI JAWABAN:</h6>
-                                    {opsi.map((o, i) => (
-                                        <div key={i} className="d-flex gap-2 mb-2">
-                                            <input className="form-control" placeholder={tipe === 'matching' ? "Kiri" : "Pilihan"} value={o.teks} onChange={e => { const n = [...opsi]; n[i].teks = e.target.value; setOpsi(n); }} />
-                                            {tipe === 'matching' && <input className="form-control" placeholder="Kanan" value={o.kunci} onChange={e => { const n = [...opsi]; n[i].kunci = e.target.value; setOpsi(n); }} />}
-                                            {tipe === 'pilgan' && (
-                                                <button className={`btn btn-sm px-3 ${o.is_benar ? 'btn-success' : 'btn-outline-secondary'}`} 
-                                                    onClick={() => {
-                                                        const n = [...opsi];
-                                                        n[i].is_benar = n[i].is_benar === 1 ? 0 : 1;
-                                                        setOpsi(n);
-                                                    }}>{o.is_benar ? 'KUNCI' : 'SET'}</button>
-                                            )}
-                                            <button className="btn btn-sm text-danger" onClick={() => setOpsi(opsi.filter((_, idx) => idx !== i))}>✕</button>
+                                <div className="card-body p-4 border-top">
+                                    <div className="d-flex flex-wrap gap-3 mb-4 justify-content-center">
+                                        {existingSoal.map((s, idx) => (
+                                            <button key={idx} onClick={() => loadSoalEdit(s, idx)}
+                                                className={`btn rounded-3 fw-bold border-2 d-flex align-items-center justify-content-center`}
+                                                style={{ 
+                                                    width: '50px', 
+                                                    height: '50px',
+                                                    backgroundColor: idSoalEdit === s.id_soal ? colors.primary : '#fff',
+                                                    color: idSoalEdit === s.id_soal ? '#fff' : colors.primary,
+                                                    borderColor: colors.primary
+                                                }}>{idx + 1}</button>
+                                        ))}
+                                        <button onClick={resetFormSoal} className="btn btn-success rounded-3 fw-bold shadow-sm d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>+</button>
+                                    </div>
+                                    
+                                    <div className="p-3 rounded-4 bg-light">
+                                        <div className="d-flex justify-content-between mb-2">
+                                            <span className="small text-muted fw-bold">Total Soal</span>
+                                            <span className="fw-bold">{existingSoal.length}</span>
                                         </div>
-                                    ))}
-                                    <button className="btn btn-sm btn-link text-dark fw-bold text-decoration-none" onClick={() => setOpsi([...opsi, { teks: '', kunci: '', is_benar: 0 }])}>+ Tambah Baris</button>
+                                        <div className="d-flex justify-content-between mb-2">
+                                            <span className="small text-muted fw-bold">Target Skor</span>
+                                            <span className="fw-bold text-danger">{targetNilai}</span>
+                                        </div>
+                                        <div className="d-flex justify-content-between">
+                                            <span className="small text-muted fw-bold">Terakumulasi</span>
+                                            <span className="fw-bold text-success">{existingSoal.reduce((acc, curr) => acc + (parseFloat(curr.bobot) || 0), 0)}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-
-                            <button className="btn btn-success w-100 fw-bold py-3 shadow-sm" onClick={simpanSoal}>SIMPAN SOAL</button>
+                                <div className="card-footer bg-white border-0 text-center py-3">
+                                    <button onClick={() => navigate('/daftar-ujian')} className="btn btn-outline-dark btn-sm rounded-pill px-4">Selesai & Tutup Panel</button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
-
-                {/* --- III. NAVIGASI --- */}
-                {idUjianBaru && editId && (
-                    <div className="col-lg-4">
-                        <div className="card shadow-sm border-0 sticky-top" style={{ borderRadius: '15px', top: '20px' }}>
-                            <div className="card-body p-4">
-                                <h6 className="fw-bold text-muted mb-3">NAVIGASI SOAL</h6>
-                                <div className="d-flex flex-wrap gap-2 mb-4">
-                                    {existingSoal.map((s, idx) => (
-                                        <button key={idx} onClick={() => loadSoalEdit(s, idx)}
-                                            className={`btn rounded-3 fw-bold border-2 ${idSoalEdit === s.id_soal ? 'btn-primary shadow' : 'btn-outline-primary'}`}
-                                            style={{ width: '45px', height: '45px' }}>{idx + 1}</button>
-                                    ))}
-                                    <button onClick={resetFormSoal} className="btn btn-success rounded-3 fw-bold shadow-sm" style={{ width: '45px', height: '45px' }}>+</button>
-                                </div>
-                                <div className="bg-light p-3 rounded-3 small text-muted">
-                                    <div>Total Soal: {existingSoal.length}</div>
-                                    <div>Akumulasi Bobot: {existingSoal.reduce((acc, curr) => acc + (parseFloat(curr.bobot) || 0), 0)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
