@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
-import Swal from 'sweetalert2'; // --- 1. Import Swal ---
+import Swal from 'sweetalert2';
 
 function DaftarUjian() {
     const [listUjian, setListUjian] = useState([]);
@@ -13,11 +13,10 @@ function DaftarUjian() {
     const nis = localStorage.getItem('nis');
     const isAdmin = role === 'admin';
 
-    // Palette Warna Eksklusif
     const colors = {
-        primary: '#023874',    // Biru Navy Elit
-        secondary: '#B8860B',  // Emas Tua
-        bgLight: '#F4F1EA',    // Krem Putih
+        primary: '#023874',
+        secondary: '#B8860B',
+        bgLight: '#F4F1EA',
         white: '#ffffff'
     };
 
@@ -28,6 +27,7 @@ function DaftarUjian() {
     const fetchUjian = async () => {
         try {
             setLoading(true);
+            // Pastikan API mengirimkan kolom 'jumlah_percobaan'
             const res = await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=get_list_ujian&nis=${nis}`);
             setListUjian(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
@@ -37,7 +37,6 @@ function DaftarUjian() {
         }
     };
 
-    // --- 2. Ganti hapusUjian dengan Swal ---
     const hapusUjian = async (id) => {
         Swal.fire({
             title: 'Hapus Ujian?',
@@ -47,22 +46,15 @@ function DaftarUjian() {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal',
-            iconColor: '#d33'
+            cancelButtonText: 'Batal'
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=hapus_ujian&id_ujian=${id}`);
-                    Swal.fire({
-                        title: 'Terhapus!',
-                        text: 'Paket ujian berhasil dihapus.',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    Swal.fire({ title: 'Terhapus!', text: 'Paket ujian telah dihapus.', icon: 'success', timer: 1500, showConfirmButton: false });
                     fetchUjian();
                 } catch (err) {
-                    Swal.fire('Error', 'Gagal menghapus data dari server.', 'error');
+                    Swal.fire('Error', 'Gagal menghapus data.', 'error');
                 }
             }
         });
@@ -77,7 +69,6 @@ function DaftarUjian() {
     return (
         <div style={{ backgroundColor: colors.bgLight, minHeight: '100vh', paddingBottom: '50px', fontFamily: "'Inter', sans-serif" }}>
             
-            {/* NAVBAR ELIT */}
             <nav className="navbar shadow-sm py-3 mb-5" style={{ backgroundColor: colors.primary, borderBottom: `4px solid ${colors.secondary}` }}>
                 <div className="container px-4">
                     <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
@@ -94,13 +85,11 @@ function DaftarUjian() {
 
             <div className="container px-4" style={{ maxWidth: '800px' }}>
                 
-                {/* Judul Halaman */}
                 <div className="mb-4 border-start border-4 border-primary ps-3">
                     <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Daftar Paket Soal' : 'Daftar Ujian Aktif'}</h3>
                     <p className="text-muted small m-0">Unit Pelaksana Teknis SMP Negeri 1 Gamping</p>
                 </div>
 
-                {/* Quick Actions Admin */}
                 {isAdmin && (
                     <div className="row g-3 mb-5">
                         <div className="col-md-6">
@@ -118,11 +107,13 @@ function DaftarUjian() {
                     </div>
                 )}
 
-                {/* List Ujian Card */}
                 <div className="row g-4">
                     {listUjian.length > 0 ? listUjian.map((u) => {
-                        const sisaJatah = parseInt(u.max_attempt) - parseInt(u.jumlah_pelaksanaan || 0);
-                        const sudahPernah = parseInt(u.jumlah_pelaksanaan || 0) > 0;
+                        // KUNCI PERBAIKAN: Gunakan nama properti yang konsisten (u.jumlah_percobaan)
+                        const totalJatah = parseInt(u.max_attempt) || 1;
+                        const dikerjakan = parseInt(u.jumlah_percobaan) || 0;
+                        const sisaJatah = totalJatah - dikerjakan;
+                        const sudahPernah = dikerjakan > 0;
 
                         return (
                             <div className="col-12" key={u.id_ujian}>
@@ -147,12 +138,12 @@ function DaftarUjian() {
                                                 {!isAdmin && (
                                                     <div className="d-flex align-items-center gap-3">
                                                         <div className="small fw-bold text-muted">
-                                                            Sisa Jatah: <span style={{ color: sisaJatah > 0 ? colors.primary : '#dc3545' }}>{sisaJatah}</span>
+                                                            Sisa Jatah: <span style={{ color: sisaJatah > 0 ? colors.primary : '#dc3545' }}>{sisaJatah} kali</span>
                                                         </div>
                                                         <div className="progress flex-grow-1" style={{ height: '6px', maxWidth: '150px' }}>
                                                             <div className="progress-bar" role="progressbar" 
                                                                  style={{ 
-                                                                    width: `${((u.max_attempt - sisaJatah)/u.max_attempt)*100}%`, 
+                                                                    width: `${(dikerjakan / totalJatah) * 100}%`, 
                                                                     backgroundColor: colors.secondary 
                                                                  }}></div>
                                                         </div>
@@ -185,8 +176,8 @@ function DaftarUjian() {
                                                         
                                                         {sudahPernah && (
                                                             <button onClick={() => navigate(`/nilai-exam?id_ujian=${u.id_ujian}`)} 
-                                                                    className="btn btn-outline-success btn-sm rounded-pill border-2 fw-bold">
-                                                                LIHAT HASIL
+                                                                    className="btn btn-outline-success btn-sm rounded-pill border-2 fw-bold shadow-sm">
+                                                                📊 LIHAT HASIL
                                                             </button>
                                                         )}
                                                     </div>
@@ -202,15 +193,13 @@ function DaftarUjian() {
                         <div className="col-12 text-center py-5 bg-white shadow-sm rounded-4">
                             <div className="display-4 opacity-25 mb-3">📁</div>
                             <h5 className="text-muted fw-bold">Belum Ada Ujian Tersedia</h5>
-                            <p className="text-muted small px-5">Hubungi Admin jika jadwal ujian Anda tidak terdaftar di sini.</p>
+                            <p className="text-muted small px-5">Hubungi pengajar jika jadwal Anda tidak muncul.</p>
                         </div>
                     )}
                 </div>
 
                 <div className="text-center mt-5">
-                    <p className="text-muted small">
-                        Pusat Evaluasi Digital &copy; 2026 - SMP Negeri 1 Gamping
-                    </p>
+                    <p className="text-muted small">UPT SMP Negeri 1 Gamping &copy; 2026</p>
                 </div>
             </div>
         </div>
