@@ -123,7 +123,7 @@ function DaftarUjian() {
                                                 {!isAdmin && (
                                                     <div className="d-flex align-items-center gap-3">
                                                         <div className="small fw-bold text-muted">
-                                                            Sisa Jatah: <span style={{ color: sisaJatah > 0 ? colors.primary : '#dc3545' }}>{sisaJatah}</span>
+                                                            Sisa Kesempatan: <span style={{ color: sisaJatah > 0 ? colors.primary : '#dc3545' }}>{sisaJatah}</span>
                                                         </div>
                                                         <div className="progress flex-grow-1" style={{ height: '6px', maxWidth: '150px' }}>
                                                             <div className="progress-bar" role="progressbar" 
@@ -157,7 +157,7 @@ function DaftarUjian() {
                                                             </Link>
                                                         ) : (
                                                             <button className="btn btn-secondary rounded-pill px-4 fw-bold shadow-sm" disabled>
-                                                                JATAH HABIS
+                                                                KESEMPATAN HABIS
                                                             </button>
                                                         )}
                                                         
