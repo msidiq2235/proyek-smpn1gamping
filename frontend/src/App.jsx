@@ -11,41 +11,46 @@ import Admin from './pages/Admin';
 
 // Fitur Baru: Exam System
 import DaftarUjian from './pages/DaftarUjian'; 
-import HalamanUjian from './pages/HalamanUjian'; 
+import Ujian from './pages/Ujian'; // <--- Pastikan nama file ini sesuai (Ujian.jsx)
 import NilaiExam from './pages/NilaiExam';
 import AdminExam from './pages/AdminExam';
 import ManageMapelExam from './pages/ManageMapelExam';
-import DetailHasil from './pages/DetailHasil'; // <--- WAJIB DITAMBAHKAN INI
+import DetailHasil from './pages/DetailHasil';
 
 function App() {
   return (
+    // Sesuaikan basename jika di hosting atau folder XAMPP berbeda
     <Router basename="/proyek-smpn1gamping/">
       <Routes>
-        {/* Public Route */}
+        {/* --- PUBLIC ROUTE --- */}
         <Route path="/" element={<Login />} />
         
-        {/* Private/Protected Routes */}
+        {/* --- PROTECTED ROUTES (SISWA & ADMIN) --- */}
         <Route path="/beranda" element={<Beranda />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/kartu-tes" element={<KartuTes />} />
         
-        {/* Laporan Nilai Raport (Fitur Lama) */}
+        {/* Fitur Nilai Raport Statis */}
         <Route path="/data-nilai" element={<DataNilai />} />
         
-        {/* Exam System Routes (Siswa & Rekap) */}
+        {/* --- EXAM SYSTEM (SISWA) --- */}
         <Route path="/daftar-ujian" element={<DaftarUjian />} />
-        <Route path="/ujian/:id_ujian" element={<HalamanUjian />} />
+        
+        {/* Route Ujian ini akan masuk ke Gerbang Token dulu baru soal */}
+        <Route path="/ujian/:id_ujian" element={<Ujian />} />
+        
+        {/* --- REKAPITULASI & AUDIT (SISWA & ADMIN) --- */}
         <Route path="/nilai-exam" element={<NilaiExam />} />
         
-        {/* Detail Jawaban (Khusus Admin/Guru) */}
+        {/* Detail Jawaban & Koreksi Manual (Khusus Admin/Guru) */}
         <Route path="/detail-hasil/:id_hasil" element={<DetailHasil />} />
         
-        {/* Admin Routes (Kelola Data & Ujian) */}
+        {/* --- MANAGEMENT UJIAN (ADMIN ONLY) --- */}
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin-exam" element={<AdminExam />} />
         <Route path="/manage-mapel-exam" element={<ManageMapelExam />} />
 
-        {/* FALLBACK ROUTE: Jika URL typo, lempar ke Login */}
+        {/* --- FALLBACK ROUTE --- */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

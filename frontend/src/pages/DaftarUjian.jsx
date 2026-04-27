@@ -111,7 +111,7 @@ function DaftarUjian() {
                                                     </span>
                                                     <span className="text-muted small fw-bold">⏱ {u.durasi} Menit</span>
                                                     
-                                                    {/* INFO TOKEN KHUSUS ADMIN */}
+                                                    {/* INFO TOKEN KHUSUS ADMIN (Siswa tidak bisa lihat ini) */}
                                                     {isAdmin && (
                                                         <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold">
                                                             🔑 TOKEN: {u.token}
@@ -148,6 +148,8 @@ function DaftarUjian() {
                                                     </div>
                                                 ) : (
                                                     <div className="d-flex flex-column gap-2">
+                                                        {/* Baik Mulai maupun Ulangi tetap masuk ke Route yang sama (Ujian.jsx) 
+                                                            agar siswa tertahan di Gerbang Token */}
                                                         {sisaJatah > 0 ? (
                                                             <Link to={`/ujian/${u.id_ujian}`} className="btn fw-bold rounded-pill px-4 shadow-sm text-white" 
                                                                   style={{ backgroundColor: colors.primary }}>
