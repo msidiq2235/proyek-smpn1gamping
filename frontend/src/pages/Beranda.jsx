@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
-import Swal from 'sweetalert2'; // --- 1. Import Swal ---
+import Swal from 'sweetalert2';
 
 function Beranda() {
   const role = localStorage.getItem('role');
   const nis = localStorage.getItem('nis');
-  const [waktu, setWaktu] = useState('');
+  const [waktu, setWaktu] = useState({ jam: '', tanggal: '' }); // State objek untuk pemisahan
   const [profil, setProfil] = useState({ nama: 'Memuat...', rombel: '-', nis: '-' });
   const navigate = useNavigate();
 
   const colors = {
-    primary: '#023874',    // Biru Navy Elit
-    secondary: '#B8860B',  // Emas Tua (Aksen)
-    bgLight: '#F4F1EA',    // Krem Putih
+    primary: '#023874',
+    secondary: '#B8860B',
+    bgLight: '#F4F1EA',
     white: '#ffffff'
   };
 
@@ -22,10 +22,15 @@ function Beranda() {
     const updateWaktu = () => {
       const sekarang = new Date();
       const opsiTanggal = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-      setWaktu(`${sekarang.toLocaleDateString('id-ID', opsiTanggal)} | ${sekarang.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})} WIB`);
+      
+      setWaktu({
+        jam: sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        tanggal: sekarang.toLocaleDateString('id-ID', opsiTanggal)
+      });
     };
+    
     updateWaktu();
-    const interval = setInterval(updateWaktu, 60000);
+    const interval = setInterval(updateWaktu, 1000); // Update tiap detik biar jamnya hidup
 
     const fetchProfil = async () => {
       if (role === 'admin' || nis === 'admin') {
@@ -46,34 +51,26 @@ function Beranda() {
     return () => clearInterval(interval);
   }, [nis, role]);
 
-  // --- 2. Ganti handleLogout dengan SweetAlert2 ---
   const handleLogout = () => {
     Swal.fire({
       title: 'Konfirmasi Keluar',
-      text: "Apakah Anda yakin ingin mengakhiri sesi manajemen akademik ini?",
+      text: "Apakah Anda yakin ingin mengakhiri sesi ini?",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: colors.primary,
       cancelButtonColor: '#d33',
       confirmButtonText: 'Ya, Keluar',
       cancelButtonText: 'Batal',
-      background: colors.white,
-      iconColor: colors.secondary,
       borderRadius: '15px'
     }).then((result) => {
       if (result.isConfirmed) {
         localStorage.clear();
-        // Popup sukses kecil sebelum redirect
         Swal.fire({
             title: 'Berhasil Keluar',
-            text: 'Sesi Anda telah dihentikan.',
             icon: 'success',
             timer: 1000,
-            showConfirmButton: false,
-            iconColor: colors.primary
-        }).then(() => {
-            navigate('/');
-        });
+            showConfirmButton: false
+        }).then(() => { navigate('/'); });
       }
     });
   };
@@ -84,12 +81,29 @@ function Beranda() {
       <style>
         {`
           .nav-custom { background-color: ${colors.primary}; border-bottom: 4px solid ${colors.secondary}; }
-          .welcome-banner { background: linear-gradient(135deg, ${colors.primary} 0%, #011f41 100%); border-radius: 20px; overflow: hidden; }
-          .menu-card-elit { border: none; border-radius: 15px; transition: all 0.4s ease; background: #ffffff; }
-          .menu-card-elit:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important; }
-          .icon-box { width: 60px; height: 60px; background-color: ${colors.bgLight}; color: ${colors.primary}; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
-          .admin-bar-card { background-color: ${colors.white}; border-radius: 15px; border: 1px solid rgba(0,0,0,0.05); transition: 0.3s; }
-          .admin-bar-card:hover { transform: scale(1.01); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+          .welcome-banner { 
+            background: linear-gradient(135deg, ${colors.primary} 0%, #011f41 100%); 
+            border-radius: 24px; 
+            position: relative;
+            overflow: hidden;
+          }
+          /* Widget Waktu Modern */
+          .time-widget {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: inline-block;
+            text-align: right;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+          }
+          .menu-card-elit { border: none; border-radius: 20px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: #ffffff; }
+          .menu-card-elit:hover { transform: translateY(-12px); box-shadow: 0 25px 50px rgba(2, 56, 116, 0.15) !important; }
+          .icon-box { width: 60px; height: 60px; background-color: ${colors.bgLight}; color: ${colors.primary}; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 20px; transition: 0.3s; }
+          .menu-card-elit:hover .icon-box { background-color: ${colors.primary}; color: white; }
+          .admin-bar-card { background-color: ${colors.white}; border-radius: 18px; border: 1px solid rgba(0,0,0,0.03); transition: 0.3s; }
+          .admin-bar-card:hover { transform: scale(1.01); background: #fdfdfd; }
         `}
       </style>
 
@@ -111,25 +125,33 @@ function Beranda() {
 
       <div className="container px-4" style={{ maxWidth: '1000px' }}>
         
-        {/* INFO WAKTU (Tambahan visual) */}
-        <div className="text-end mb-3">
-            <small className="fw-bold text-muted" style={{ letterSpacing: '0.5px' }}>📅 {waktu}</small>
-        </div>
-
         {/* HERO BANNER */}
         <div className="welcome-banner p-4 p-md-5 mb-5 shadow-lg text-white">
           <div className="row align-items-center">
-            <div className="col-md-8">
-              <h1 className="fw-bold mb-2">
-                Selamat Datang, {profil.nama} 
-                {(role === 'admin' || nis === 'admin') && <span className="ms-2 badge bg-white text-dark fw-bold" style={{fontSize:'0.4em', verticalAlign:'middle'}}>ADMIN</span>}
+            <div className="col-md-7">
+              <h1 className="fw-bold mb-2" style={{ fontSize: '2.4rem' }}>
+                Halo, {profil.nama.split(' ')[0]}! 
+                {(role === 'admin' || nis === 'admin') && <span className="ms-2 badge bg-white text-dark fw-bold" style={{fontSize:'0.35em', verticalAlign:'middle'}}>ADMIN</span>}
               </h1>
-              <p className="lead opacity-75 mb-0">Sistem CBT dan Rekapitulasi Nilai Online</p>
-            </div>
-            <div className="col-md-4 text-md-end mt-4 mt-md-0">
-               <span className="badge px-4 py-2 rounded-pill shadow-sm fw-bold" style={{ backgroundColor: colors.secondary, color: colors.primary }}>
+              <p className="lead opacity-75 mb-4">Sistem CBT dan Rekapitulasi Nilai Online</p>
+              <span className="badge px-4 py-2 rounded-pill shadow-sm fw-bold" style={{ backgroundColor: colors.secondary, color: colors.primary }}>
                  {role === 'admin' ? 'SYSTEM ADMINISTRATOR' : `SISWA - KELAS ${profil.rombel}`}
-               </span>
+              </span>
+            </div>
+            
+            {/* Widget Waktu Modern di dalam Banner */}
+            <div className="col-md-5 text-md-end mt-4 mt-md-0">
+               <div className="time-widget">
+                  <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: colors.secondary, textTransform: 'uppercase', letterSpacing: '2px' }}>
+                    Waktu Server
+                  </div>
+                  <div style={{ fontSize: '2rem', fontWeight: '800', lineHeight: '1', margin: '5px 0' }}>
+                    {waktu.jam}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', opacity: '0.8' }}>
+                    {waktu.tanggal}
+                  </div>
+               </div>
             </div>
           </div>
         </div>
@@ -138,44 +160,44 @@ function Beranda() {
         <div className="row g-4">
           <div className="col-md-4">
             <Link to="/profil" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
-              <div className="icon-box">👤</div>
+              <div className="icon-box shadow-sm">👤</div>
               <h5 className="fw-bold text-dark mb-2">Profil Siswa</h5>
-              <p className="text-muted small">Kelola informasi biografi dan data administrasi kesiswaan Anda.</p>
+              <p className="text-muted small">Kelola informasi biografi dan data administrasi Anda.</p>
             </Link>
           </div>
           <div className="col-md-4">
             <Link to="/kartu-tes" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
-              <div className="icon-box">🪪</div>
+              <div className="icon-box shadow-sm">🪪</div>
               <h5 className="fw-bold text-dark mb-2">Kartu Ujian</h5>
-              <p className="text-muted small">Akses kartu identitas resmi untuk mengikuti pelaksanaan evaluasi.</p>
+              <p className="text-muted small">Akses kartu identitas resmi untuk pelaksanaan evaluasi.</p>
             </Link>
           </div>
           <div className="col-md-4">
             <Link to="/data-nilai" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
-              <div className="icon-box">📊</div>
+              <div className="icon-box shadow-sm">📊</div>
               <h5 className="fw-bold text-dark mb-2">Laporan Nilai</h5>
-              <p className="text-muted small">Tinjau akumulasi perolehan hasil belajar dan evaluasi akhir di sini.</p>
+              <p className="text-muted small">Tinjau akumulasi hasil belajar dan evaluasi di sini.</p>
             </Link>
           </div>
 
-          {/* Tombol CBT Siswa (Hanya tampil jika bukan admin) */}
+          {/* Tombol CBT Siswa */}
           {role !== 'admin' && (
             <div className="col-md-12 mt-4">
-                <Link to="/daftar-ujian" className="card menu-card-elit p-4 shadow-sm text-decoration-none border-0" style={{ background: `linear-gradient(to right, #fff, ${colors.bgLight})`, borderLeft: `6px solid ${colors.primary}` }}>
+                <Link to="/daftar-ujian" className="card menu-card-elit p-4 shadow-sm text-decoration-none border-0" style={{ background: `linear-gradient(to right, #ffffff, #fffaf0)`, borderLeft: `8px solid ${colors.primary}` }}>
                     <div className="row align-items-center">
                         <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.primary, color: '#fff' }}>📝</div></div>
                         <div className="col">
                             <h4 className="fw-bold text-dark mb-1">Ujian CBT Online</h4>
-                            <p className="text-muted m-0 small">Masuk ke ruang pengerjaan ujian online terintegrasi.</p>
+                            <p className="text-muted m-0 small">Masuk ke ruang pengerjaan ujian terintegrasi.</p>
                         </div>
-                        <div className="col-auto"><span className="badge rounded-pill px-4 py-2 fw-bold shadow-sm text-white" style={{backgroundColor: colors.primary}}>MULAI UJIAN</span></div>
+                        <div className="col-auto"><span className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow" style={{backgroundColor: colors.primary}}>MULAI SEKARANG</span></div>
                     </div>
                 </Link>
             </div>
           )}
         </div>
 
-        {/* --- AREA ADMIN --- */}
+        {/* AREA ADMIN */}
         {(role === 'admin' || nis === 'admin') && (
           <div className="mt-5 pt-4">
             <div className="d-flex align-items-center gap-3 mb-4 text-muted fw-bold text-uppercase" style={{ letterSpacing: '2px', fontSize: '0.8rem' }}>
@@ -191,9 +213,9 @@ function Beranda() {
                         <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.primary, color: '#fff' }}>⚙️</div></div>
                         <div className="col">
                             <h5 className="fw-bold text-dark mb-1">Kelola CBT</h5>
-                            <p className="text-muted small mb-0">Kelola daftar ujian, butir soal, dan durasi waktu pengerjaan.</p>
+                            <p className="text-muted small mb-0">Manajemen daftar ujian, butir soal, dan durasi waktu.</p>
                         </div>
-                        <div className="col-auto"><span className="btn btn-sm fw-bold rounded-pill px-4 text-white" style={{backgroundColor: colors.primary}}>KELOLA SOAL</span></div>
+                        <div className="col-auto"><span className="btn btn-sm fw-bold rounded-pill px-4 text-white" style={{backgroundColor: colors.primary}}>KELOLA</span></div>
                     </div>
                   </div>
                 </Link>
@@ -206,9 +228,9 @@ function Beranda() {
                         <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.secondary, color: '#fff' }}>📜</div></div>
                         <div className="col">
                             <h5 className="fw-bold text-dark mb-1">Sistem Rekap Nilai</h5>
-                            <p className="text-muted small mb-0">Input nilai kategori ujian, kelola mapel utama, dan konfigurasi judul laporan.</p>
+                            <p className="text-muted small mb-0">Input nilai, manajemen mata pelajaran, dan laporan.</p>
                         </div>
-                        <div className="col-auto"><span className="btn btn-sm btn-dark fw-bold rounded-pill px-4">Buka Panel</span></div>
+                        <div className="col-auto"><span className="btn btn-sm btn-dark fw-bold rounded-pill px-4">BUKA PANEL</span></div>
                     </div>
                   </div>
                 </Link>
