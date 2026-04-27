@@ -81,7 +81,7 @@ function KartuTes() {
             Kartu Ujian
           </span>
           <div className="ms-auto d-flex gap-2">
-            <button onClick={() => window.print()} className="btn btn-success btn-sm fw-bold px-3">Print Kartu</button>
+            <button onClick={() => window.print()} className="btn btn-success btn-sm fw-bold px-3">Cetak Kartu</button>
             <Link to="/beranda" className="btn btn-light btn-sm fw-bold px-3">Kembali</Link>
           </div>
         </div>
@@ -148,10 +148,6 @@ function KartuTes() {
             </p>
           </div>
         </div>
-
-        <p className="text-center mt-4 text-muted small d-print-none">
-          *Gunakan kertas ukuran A4 atau F4 untuk hasil cetak terbaik.
-        </p>
       </div>
     </div>
   );

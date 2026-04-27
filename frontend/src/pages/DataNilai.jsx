@@ -131,8 +131,8 @@ function DataNilai() {
             PORTAL AKADEMIK
           </span>
           <div className="ms-auto d-flex gap-2">
-            <button onClick={() => window.print()} className="btn btn-success btn-sm fw-bold px-3">🖨️ CETAK</button>
-            <button onClick={() => navigate('/beranda')} className="btn btn-light btn-sm fw-bold text-primary px-3">⬅ BERANDA</button>
+            <button onClick={() => window.print()} className="btn btn-success btn-sm fw-bold px-3">Cetak</button>
+            <button onClick={() => navigate('/beranda')} className="btn btn-light btn-sm fw-bold text-primary px-3">kembali</button>
           </div>
         </div>
       </nav>

@@ -10,13 +10,14 @@ function Admin() {
 
   // Palette Warna SMPN 1 Gamping
   const colors = {
-  primary: '#023874',    // Biru Navy Bos
-  secondary: '#B8860B',  // Emas Tua (Elit)
-  bgLight: '#F4F1EA',    // Krem Putih (Kesan Kertas Mahal)
-  textDark: '#1A1A1A'    // Hitam Eboni
-};
+    primary: '#023874',    // Biru Navy Bos
+    secondary: '#B8860B',  // Emas Tua (Elit)
+    bgLight: '#F4F1EA',    // Krem Putih (Kesan Kertas Mahal)
+    textDark: '#1A1A1A'    // Hitam Eboni
+  };
 
-  const [pesan, setPesan] = useState({ tipe: '', isi: '' });
+  const [pesan, setPesan] = useState({ tipe: '', isi: '' }); // Untuk Pop-up umum
+  const [pesanImport, setPesanImport] = useState({ tipe: '', isi: '' }); // Khusus Excel
   const [namaTerdeteksi, setNamaTerdeteksi] = useState('');
   const [daftarSiswa, setDaftarSiswa] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -32,6 +33,16 @@ function Admin() {
   const [judulLaporan, setJudulLaporan] = useState('Laporan Hasil Evaluasi');
   const [nisKolektif, setNisKolektif] = useState('');
 
+  // Hilangkan notifikasi POP-UP secara otomatis setelah 2 detik
+  useEffect(() => {
+    if (pesan.isi) {
+      const timer = setTimeout(() => {
+        setPesan({ tipe: '', isi: '' });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [pesan]);
+
   useEffect(() => {
     if (role !== 'admin' && localStorage.getItem('nis') !== 'admin') navigate('/beranda');
     muatDataAwal();
@@ -44,7 +55,7 @@ function Admin() {
     muatJudul();
   };
 
-  // --- Fungsi Load Data (Tetap sama dengan logika sebelumnya) ---
+  // --- Fungsi Load Data ---
   const muatMapel = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/get_mapel.php`);
@@ -80,8 +91,55 @@ function Admin() {
     } catch (err) { console.error(err); }
   };
 
-  // --- Fungsi Handler (Simpan, Edit, Hapus, Import) ---
-  // (Logika fungsi simpanSiswa, editSiswa, hapusSiswa, handleImportExcel, dll sama seperti kode asli Anda)
+  // --- Fungsi Tambahan untuk Master Data ---
+  const tambahKategori = async () => {
+    if (!kategoriBaru) return alert("Nama kategori tidak boleh kosong!");
+    try {
+      await axios.post(`${API_BASE_URL}/tambah_kategori.php`, { nama_kategori: kategoriBaru });
+      setKategoriBaru('');
+      muatKategori();
+      setPesan({ tipe: 'success', isi: 'Kategori Berhasil Ditambahkan!' });
+    } catch (err) { console.error(err); setPesan({ tipe: 'danger', isi: 'Gagal menambah kategori.' }); }
+  };
+
+  const tambahMapel = async () => {
+    if (!mapelBaru) return alert("Nama mapel tidak boleh kosong!");
+    try {
+      await axios.post(`${API_BASE_URL}/tambah_mapel.php`, { nama_mapel: mapelBaru });
+      setMapelBaru('');
+      muatMapel();
+      setPesan({ tipe: 'success', isi: 'Mata Pelajaran Berhasil Ditambahkan!' });
+    } catch (err) { console.error(err); setPesan({ tipe: 'danger', isi: 'Gagal menambah mata pelajaran.' }); }
+  };
+
+  const simpanJudulBaru = async () => {
+    try {
+      await axios.post(`${API_BASE_URL}/update_judul.php`, { judul: judulLaporan });
+      setPesan({ tipe: 'success', isi: 'Judul Laporan Berhasil Diperbarui!' });
+    } catch (err) { console.error(err); setPesan({ tipe: 'danger', isi: 'Gagal memperbarui judul.' }); }
+  };
+
+  const hapusKategori = async (id) => {
+    if (window.confirm("Hapus kategori ini?")) {
+      try {
+        await axios.post(`${API_BASE_URL}/hapus_kategori.php`, { id_kategori: id, id: id });
+        muatKategori();
+        setPesan({ tipe: 'success', isi: 'Kategori Berhasil Dihapus!' });
+      } catch (err) { console.error(err); }
+    }
+  };
+
+  const hapusMapel = async (id) => {
+    if (window.confirm("Hapus mata pelajaran ini?")) {
+      try {
+        await axios.post(`${API_BASE_URL}/hapus_mapel.php`, { id_mapel: id, id: id });
+        muatMapel();
+        setPesan({ tipe: 'success', isi: 'Mata Pelajaran Berhasil Dihapus!' });
+      } catch (err) { console.error(err); }
+    }
+  };
+
+  // --- Fungsi Handler (Simpan, Edit, Import) ---
   const handleCariKolektif = async (nisInput, kategoriInput) => {
     const cleanNIS = nisInput.trim();
     if (cleanNIS.length > 2) {
@@ -147,7 +205,7 @@ function Admin() {
       const workbook = XLSX.read(data, { type: "array" });
       const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
       try {
-        setPesan({ tipe: 'info', isi: '🚀 Sedang memproses Excel...' });
+        setPesanImport({ tipe: 'info', isi: 'Sedang memproses Excel...' });
         for (const row of jsonData) {
           try { await axios.post(`${API_BASE_URL}/tambah_siswa.php`, { nis: row.nis, nama: row.nama, password: row.nis, rombel: row.rombel || '-', asal_sekolah: row.asal_sekolah || '-' }); } catch(e){}
           for (const m of daftarMapel) {
@@ -155,16 +213,47 @@ function Admin() {
             await axios.post(`${API_BASE_URL}/simpan_nilai_satuan.php`, { nis: row.nis, mapel: m.nama_mapel, [kategori]: val });
           }
         }
-        setPesan({ tipe: 'success', isi: '🎉 Import Selesai!' }); muatDaftarSiswa();
-      } catch (err) { setPesan({ tipe: 'danger', isi: '❌ Import gagal!' }); }
+        setPesanImport({ tipe: 'success', isi: 'Import Selesai!' }); muatDaftarSiswa();
+      } catch (err) { setPesanImport({ tipe: 'danger', isi: '❌ Import gagal!' }); }
     };
     reader.readAsArrayBuffer(file);
+    e.target.value = null; // Reset input file
   };
 
   const namaKategoriAktif = daftarKategori.find(k => k.id_kategori === kategori)?.nama_kategori || 'Pilih Kategori';
 
   return (
     <div style={{ backgroundColor: '#fcfcfc', minHeight: '100vh', paddingBottom: '50px' }}>
+      
+      {/* TAMPILAN POP-UP UMUM */}
+      {pesan.isi && (
+        <div 
+          className={`alert alert-${pesan.tipe} shadow-lg border-0 d-flex align-items-center fw-bold`} 
+          style={{ 
+            position: 'fixed', 
+            top: '30px', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 9999,
+            minWidth: '300px',
+            justifyContent: 'center',
+            borderRadius: '12px',
+            animation: 'fadeInDown 0.3s ease-out'
+          }}
+        >
+          {pesan.isi}
+        </div>
+      )}
+
+      <style>
+        {`
+          @keyframes fadeInDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+          }
+        `}
+      </style>
+
       {/* NAVBAR STYLE SMPN 1 GAMPING */}
       <nav className="navbar navbar-expand-lg shadow-sm py-3 mb-5" style={{ backgroundColor: colors.primary, borderBottom: `4px solid ${colors.secondary}` }}>
         <div className="container">
@@ -177,25 +266,19 @@ function Admin() {
           </span>
           <div className="ms-auto">
             <Link to="/beranda" className="btn btn-outline-light btn-sm fw-bold px-4 rounded-pill">
-               ⬅ KEMBALI
+               KEMBALI
             </Link>
           </div>
         </div>
       </nav>
 
       <div className="container">
-        {pesan.isi && (
-          <div className={`alert alert-${pesan.tipe} shadow-sm border-0 mb-4`} style={{ borderRadius: '10px' }}>
-            {pesan.isi}
-          </div>
-        )}
-
         <div className="row g-4 mb-5">
           {/* FORM SISWA */}
           <div className="col-md-4">
             <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: '15px' }}>
-              <div className="p-3 text-white fw-bold text-center" style={{ backgroundColor: colors.primary }}>
-                {isEditMode ? '✏️ EDIT DATA SISWA' : '➕ REGISTRASI SISWA'}
+              <div className="p-3 text-white fw-bold text-center" style={{ backgroundColor: colors.primary, borderBottom: `3px solid ${colors.secondary}` }}>
+                {isEditMode ? 'EDIT DATA SISWA' : 'REGISTRASI SISWA'}
               </div>
               <div className="card-body p-4">
                 <form onSubmit={simpanSiswa}>
@@ -230,16 +313,26 @@ function Admin() {
 
           {/* INPUT NILAI */}
           <div className="col-md-8">
-            <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
-              <div className="p-3 text-dark fw-bold d-flex justify-content-between align-items-center" style={{ backgroundColor: '#fff', borderBottom: `3px solid ${colors.secondary}` }}>
-                <span>📊 INPUT NILAI EVALUASI</span>
+            <div className="card border-0 shadow-sm overflow-hidden" style={{ borderRadius: '15px' }}>
+              <div className="p-3 text-white fw-bold d-flex justify-content-between align-items-center" style={{ backgroundColor: colors.primary, borderBottom: `3px solid ${colors.secondary}` }}>
+                <span>INPUT NILAI EVALUASI</span>
                 <div className="d-flex gap-2">
-                    <label htmlFor="importExcel" className="btn btn-outline-success btn-sm fw-bold rounded-pill">📂 IMPORT EXCEL</label>
+                    <label htmlFor="importExcel" className="btn btn-sm fw-bold rounded-pill mb-0" style={{ backgroundColor: colors.primary, color: '#fff', border: '1px solid #fff', cursor: 'pointer' }}>IMPORT EXCEL</label>
                     <input type="file" accept=".xlsx,.xls" onChange={handleImportExcel} className="d-none" id="importExcel" />
-                    <button className="btn btn-outline-secondary btn-sm rounded-circle" onClick={() => setModeEditKategori(!modeEditKategori)}>⚙️</button>
+                    
+                    <button type="button" className="btn btn-sm rounded-circle text-white d-flex justify-content-center align-items-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', border: 'none', width: '32px', height: '32px' }} onClick={() => setModeEditKategori(!modeEditKategori)}>⚙️</button>
                 </div>
               </div>
               <div className="card-body p-4">
+                
+                {/* 🚀 NOTIFIKASI KHUSUS IMPORT EXCEL (Inline, pakai tombol Close) */}
+                {pesanImport.isi && (
+                  <div className={`alert alert-${pesanImport.tipe} alert-dismissible fade show shadow-sm border-0 mb-4`} role="alert" style={{ borderRadius: '10px' }}>
+                    {pesanImport.isi}
+                    <button type="button" className="btn-close" onClick={() => setPesanImport({ tipe: '', isi: '' })} aria-label="Close"></button>
+                  </div>
+                )}
+
                 <form onSubmit={simpanNilaiKolektif}>
                   <div className="row g-3 mb-4">
                     <div className="col-md-6">
@@ -251,7 +344,7 @@ function Admin() {
                     </div>
                     <div className="col-md-6">
                       <label className="small fw-bold text-muted">KATEGORI UJIAN</label>
-                      <select className="form-select border-2 fw-bold" value={kategori} onChange={(e) => {setKategori(e.target.value); handleCariKolektif(nisKolektif, e.target.value);}} style={{ color: colors.primary, borderColor: colors.secondary }}>
+                      <select className="form-select border-2 fw-bold" value={kategori} onChange={(e) => {setKategori(e.target.value); handleCariKolektif(nisKolektif, e.target.value);}} style={{ color: colors.primary, borderColor: colors.primary }}>
                         <option value="" disabled>-- Pilih Kategori --</option>
                         {daftarKategori.map((kat) => (<option key={kat.id_kategori} value={kat.id_kategori}>{kat.nama_kategori}</option>))}
                       </select>
@@ -281,50 +374,71 @@ function Admin() {
                       </div>
                     ))}
                   </div>
-                  <button className="btn w-100 fw-bold py-2 shadow" disabled={!namaTerdeteksi || !kategori} style={{ backgroundColor: colors.secondary, color: colors.primary }}>
-                    💾 SIMPAN NILAI {namaKategoriAktif.toUpperCase()}
+                  <button className="btn w-100 fw-bold py-2 shadow" disabled={!namaTerdeteksi || !kategori} style={{ backgroundColor: colors.primary, color: colors.bgLight }}>
+                    SIMPAN NILAI {namaKategoriAktif.toUpperCase()}
                   </button>
                 </form>
 
                 {/* MODAL-LIKE SETTINGS PANEL */}
                 {modeEditKategori && (
-                  <div className="mt-4 p-4 rounded shadow-sm border" style={{ backgroundColor: '#fff' }}>
-                    <h6 className="fw-bold mb-4" style={{ color: colors.primary }}>⚙️ PENGATURAN MASTER DATA</h6>
-                    <div className="row">
-                        <div className="col-md-6 border-end">
-                            <p className="small fw-bold">1. KATEGORI</p>
-                            {kategoriEditData.map((kat, index) => (
-                                <div className="input-group input-group-sm mb-2" key={kat.id_kategori}>
-                                    <input type="text" className="form-control" value={kat.nama_kategori} onChange={(e) => {
-                                        const newData = [...kategoriEditData];
-                                        newData[index].nama_kategori = e.target.value;
-                                        setKategoriEditData(newData);
-                                    }} />
-                                    <button className="btn btn-outline-danger" onClick={() => { /* hapusKategori */ }}>🗑️</button>
-                                </div>
-                            ))}
-                            <div className="input-group input-group-sm mt-3">
-                                <input type="text" className="form-control" placeholder="Baru..." value={kategoriBaru} onChange={(e) => setKategoriBaru(e.target.value)} />
-                                <button className="btn btn-success" onClick={() => { /* tambahKategori */ }}>+</button>
-                            </div>
-                        </div>
-                        <div className="col-md-6 ps-md-4">
-                            <p className="small fw-bold">2. MATA PELAJARAN</p>
-                            <div className="d-flex flex-wrap gap-1 mb-3">
-                                {daftarMapel.map((m) => (
-                                    <span key={m.id_mapel} className="badge bg-light text-dark border p-2">
-                                        {m.nama_mapel}
-                                        <button className="btn-close ms-2" style={{fontSize:'8px'}} onClick={() => { /* hapusMapel */ }}></button>
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="input-group input-group-sm">
-                                <input type="text" className="form-control" placeholder="Baru..." value={mapelBaru} onChange={(e) => setMapelBaru(e.target.value)} />
-                                <button className="btn btn-success" onClick={() => { /* tambahMapel */ }}>+</button>
-                            </div>
-                        </div>
+                  <div className="mt-4 rounded shadow-sm border animate__animated animate__fadeIn" style={{ backgroundColor: '#fff', overflow: 'hidden' }}>
+                    <div className="p-3 text-white fw-bold d-flex align-items-center gap-2" style={{ backgroundColor: colors.primary, borderBottom: `3px solid ${colors.secondary}` }}>
+                        PENGATURAN MASTER DATA & LAPORAN
                     </div>
-                    <button type="button" className="btn btn-dark btn-sm w-100 mt-4" onClick={() => setModeEditKategori(false)}>TUTUP PENGATURAN</button>
+                    
+                    <div className="p-4">
+                        <div className="mb-4 pb-3 border-bottom">
+                            <label className="small fw-bold text-muted">JUDUL LAPORAN (HEADER)</label>
+                            <div className="input-group">
+                                <input 
+                                    type="text" 
+                                    className="form-control" 
+                                    value={judulLaporan} 
+                                    onChange={(e) => setJudulLaporan(e.target.value)} 
+                                    placeholder="Contoh: Laporan Hasil Evaluasi Siswa"
+                                />
+                                <button type="button" className="btn fw-bold text-white" style={{ backgroundColor: colors.primary }} onClick={simpanJudulBaru}>UPDATE JUDUL</button>
+                            </div>
+                        </div>
+
+                        <div className="row">
+                            <div className="col-md-6 border-end">
+                                <p className="small fw-bold">1. MANAJEMEN KATEGORI NILAI</p>
+                                {kategoriEditData.map((kat) => (
+                                    <div className="input-group input-group-sm mb-2" key={kat.id_kategori}>
+                                        <input type="text" className="form-control" value={kat.nama_kategori} readOnly />
+                                        <button type="button" className="btn btn-outline-danger" onClick={() => hapusKategori(kat.id_kategori)}>🗑️</button>
+                                    </div>
+                                ))}
+                                <div className="input-group input-group-sm mt-3">
+                                    <input type="text" className="form-control" placeholder="Nama Kategori Baru..." value={kategoriBaru} onChange={(e) => setKategoriBaru(e.target.value)} />
+                                    <button type="button" className="btn btn-success" onClick={tambahKategori}>TAMBAH</button>
+                                </div>
+                            </div>
+
+                            <div className="col-md-6 ps-md-4">
+                                <p className="small fw-bold">2. MANAJEMEN MATA PELAJARAN</p>
+                                <div className="d-flex flex-wrap gap-1 mb-3">
+                                    {daftarMapel.map((m) => (
+                                        <span key={m.id_mapel} className="badge bg-light text-dark border p-2 d-flex align-items-center gap-2">
+                                            {m.nama_mapel}
+                                            <button 
+                                                type="button"
+                                                className="btn-close" 
+                                                style={{fontSize:'8px'}} 
+                                                onClick={() => hapusMapel(m.id_mapel)}
+                                            ></button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="input-group input-group-sm">
+                                    <input type="text" className="form-control" placeholder="Nama Mapel Baru..." value={mapelBaru} onChange={(e) => setMapelBaru(e.target.value)} />
+                                    <button type="button" className="btn btn-success" onClick={tambahMapel}>TAMBAH</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" className="btn btn-dark btn-sm w-100 mt-4 fw-bold" onClick={() => setModeEditKategori(false)}>TUTUP PENGATURAN</button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -334,9 +448,9 @@ function Admin() {
 
         {/* TABEL REKAP */}
         <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
-          <div className="p-3 text-white fw-bold d-flex justify-content-between align-items-center" style={{ backgroundColor: colors.dark }}>
-            <span>📋 REKAPITULASI NILAI ({namaKategoriAktif.toUpperCase()})</span>
-            <button className="btn btn-danger btn-sm fw-bold rounded-pill px-3" onClick={() => { /* hapusSemuaSiswa */ }}>🚨 KOSONGKAN DATA</button>
+          <div className="p-3 text-white fw-bold d-flex justify-content-between align-items-center" style={{ backgroundColor: colors.textDark }}>
+            <span>REKAPITULASI NILAI ({namaKategoriAktif.toUpperCase()})</span>
+            <button type="button" className="btn btn-danger btn-sm fw-bold rounded-pill px-3" onClick={() => { /* hapusSemuaSiswa */ }}>KOSONGKAN DATA</button>
           </div>
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
@@ -366,8 +480,8 @@ function Admin() {
                     })}
                     <td className="text-center pe-4">
                       <div className="btn-group shadow-sm border rounded-pill overflow-hidden">
-                        <button className="btn btn-white btn-sm px-3 border-end" onClick={() => editSiswa(s)}>✏️</button>
-                        <button className="btn btn-white btn-sm px-3 text-danger" onClick={() => { /* hapusSiswa(s.nis) */ }}>🗑️</button>
+                        <button type="button" className="btn btn-white btn-sm px-3 border-end" onClick={() => editSiswa(s)}>✏️</button>
+                        <button type="button" className="btn btn-white btn-sm px-3 text-danger" onClick={() => { /* hapusSiswa(s.nis) */ }}>🗑️</button>
                       </div>
                     </td>
                   </tr>
