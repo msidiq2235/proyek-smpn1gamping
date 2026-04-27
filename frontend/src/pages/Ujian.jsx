@@ -69,7 +69,12 @@ function Ujian() {
     };
 
     const handleStartTest = () => {
-        setStartTime(new Date().toISOString().slice(0, 19).replace('T', ' ')); 
+        // 🚀 LOGIKA WAKTU LOKAL (WIB/WITA/WIT):
+        // Jangan langsung pakai toISOString() karena itu format jam UTC (London)
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Koreksi ke zona waktu lokal
+        
+        setStartTime(now.toISOString().slice(0, 19).replace('T', ' ')); 
         setStep('pengerjaan');
     };
 

@@ -56,23 +56,29 @@ function NilaiExam() {
     };
 
     // --- FIX DURASI 420 MENIT ---
+    // --- FIX DURASI (MENGHAPUS SELISIH 7 JAM) ---
     const hitungDurasi = (mulai, selesai) => {
         if (!mulai || !selesai || selesai === "0000-00-00 00:00:00") return "-";
         
-        // Gunakan replace spasi ke 'T' agar formatnya ISO (YYYY-MM-DDTHH:mm:ss)
-        // Ini memaksa browser menganggap ini waktu lokal, bukan UTC.
         const start = new Date(mulai.replace(' ', 'T'));
         const end = new Date(selesai.replace(' ', 'T'));
         
-        const diffMs = end - start;
+        let diffMs = end - start;
         
-        // Proteksi jika selisih minus karena bug jam server
+        // 🚀 LOGIKA ANTI-LONDON: Jika selisih lebih dari 6 jam, potong 7 jam (25.200.000 ms)
+        // Ini untuk mengakali data lama yang terlanjur tersimpan dengan format zona waktu UTC
+        if (diffMs > 21600000) { 
+            diffMs -= 25200000;
+        }
+
         if (diffMs < 0) return "0m 0s";
 
         const totalDetik = Math.floor(diffMs / 1000);
-        const m = Math.floor(totalDetik / 60);
+        const h = Math.floor(totalDetik / 3600);
+        const m = Math.floor((totalDetik % 3600) / 60);
         const s = totalDetik % 60;
         
+        if (h > 0) return `${h}j ${m}m ${s}s`;
         return `${m}m ${s}s`;
     };
 
