@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
+import Swal from 'sweetalert2'; // --- 1. Import Swal ---
 
 function DaftarUjian() {
     const [listUjian, setListUjian] = useState([]);
@@ -36,11 +37,35 @@ function DaftarUjian() {
         }
     };
 
+    // --- 2. Ganti hapusUjian dengan Swal ---
     const hapusUjian = async (id) => {
-        if (window.confirm("Hapus ujian ini beserta seluruh data nilai yang terkait?")) {
-            await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=hapus_ujian&id_ujian=${id}`);
-            fetchUjian();
-        }
+        Swal.fire({
+            title: 'Hapus Ujian?',
+            text: "Seluruh data soal dan nilai siswa pada ujian ini akan hilang permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            iconColor: '#d33'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=hapus_ujian&id_ujian=${id}`);
+                    Swal.fire({
+                        title: 'Terhapus!',
+                        text: 'Paket ujian berhasil dihapus.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    fetchUjian();
+                } catch (err) {
+                    Swal.fire('Error', 'Gagal menghapus data dari server.', 'error');
+                }
+            }
+        });
     };
 
     if (loading) return (
@@ -71,23 +96,23 @@ function DaftarUjian() {
                 
                 {/* Judul Halaman */}
                 <div className="mb-4 border-start border-4 border-primary ps-3">
-                    <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Daftar Soal' : 'Daftar Ujian Aktif'}</h3>
-                    <p className="text-muted small m-0">SMP Negeri 1 Gamping</p>
+                    <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Daftar Paket Soal' : 'Daftar Ujian Aktif'}</h3>
+                    <p className="text-muted small m-0">Unit Pelaksana Teknis SMP Negeri 1 Gamping</p>
                 </div>
 
-                {/* Quick Actions Khusus Admin */}
+                {/* Quick Actions Admin */}
                 {isAdmin && (
                     <div className="row g-3 mb-5">
                         <div className="col-md-6">
                             <Link to="/admin-exam" className="btn w-100 fw-bold py-3 shadow-sm border-0 d-flex align-items-center justify-content-center gap-2" 
                                   style={{ backgroundColor: colors.primary, color: '#fff', borderRadius: '12px' }}>
-                                <span>➕</span> BUAT PAKET UJIAN BARU
+                                <span>➕</span> BUAT UJIAN BARU
                             </Link>
                         </div>
                         <div className="col-md-6">
                             <Link to="/nilai-exam" className="btn w-100 fw-bold py-3 shadow-sm border-0 d-flex align-items-center justify-content-center gap-2" 
                                   style={{ backgroundColor: colors.secondary, color: '#fff', borderRadius: '12px' }}>
-                                <span>📊</span> REKAPITULASI NILAI CBT
+                                <span>📊</span> REKAP NILAI CBT
                             </Link>
                         </div>
                     </div>
@@ -96,8 +121,8 @@ function DaftarUjian() {
                 {/* List Ujian Card */}
                 <div className="row g-4">
                     {listUjian.length > 0 ? listUjian.map((u) => {
-                        const sisaJatah = parseInt(u.max_attempt) - parseInt(u.jumlah_percobaan);
-                        const sudahPernah = parseInt(u.jumlah_percobaan) > 0;
+                        const sisaJatah = parseInt(u.max_attempt) - parseInt(u.jumlah_pelaksanaan || 0);
+                        const sudahPernah = parseInt(u.jumlah_pelaksanaan || 0) > 0;
 
                         return (
                             <div className="col-12" key={u.id_ujian}>
@@ -111,7 +136,6 @@ function DaftarUjian() {
                                                     </span>
                                                     <span className="text-muted small fw-bold">⏱ {u.durasi} Menit</span>
                                                     
-                                                    {/* INFO TOKEN KHUSUS ADMIN (Siswa tidak bisa lihat ini) */}
                                                     {isAdmin && (
                                                         <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold">
                                                             🔑 TOKEN: {u.token}
@@ -123,12 +147,12 @@ function DaftarUjian() {
                                                 {!isAdmin && (
                                                     <div className="d-flex align-items-center gap-3">
                                                         <div className="small fw-bold text-muted">
-                                                            Sisa Kesempatan: <span style={{ color: sisaJatah > 0 ? colors.primary : '#dc3545' }}>{sisaJatah}</span>
+                                                            Sisa Jatah: <span style={{ color: sisaJatah > 0 ? colors.primary : '#dc3545' }}>{sisaJatah}</span>
                                                         </div>
                                                         <div className="progress flex-grow-1" style={{ height: '6px', maxWidth: '150px' }}>
                                                             <div className="progress-bar" role="progressbar" 
                                                                  style={{ 
-                                                                    width: `${(u.jumlah_percobaan/u.max_attempt)*100}%`, 
+                                                                    width: `${((u.max_attempt - sisaJatah)/u.max_attempt)*100}%`, 
                                                                     backgroundColor: colors.secondary 
                                                                  }}></div>
                                                         </div>
@@ -142,14 +166,12 @@ function DaftarUjian() {
                                                         <Link to={`/admin-exam?edit=${u.id_ujian}`} className="btn btn-warning fw-bold rounded-pill px-4 shadow-sm text-dark">
                                                             ✏️ EDIT SOAL
                                                         </Link>
-                                                        <button onClick={() => hapusUjian(u.id_ujian)} className="btn btn-outline-danger btn-sm rounded-pill border-0">
-                                                            🗑️ Hapus Ujian
+                                                        <button onClick={() => hapusUjian(u.id_ujian)} className="btn btn-outline-danger btn-sm rounded-pill border-0 fw-bold">
+                                                            🗑️ HAPUS
                                                         </button>
                                                     </div>
                                                 ) : (
                                                     <div className="d-flex flex-column gap-2">
-                                                        {/* Baik Mulai maupun Ulangi tetap masuk ke Route yang sama (Ujian.jsx) 
-                                                            agar siswa tertahan di Gerbang Token */}
                                                         {sisaJatah > 0 ? (
                                                             <Link to={`/ujian/${u.id_ujian}`} className="btn fw-bold rounded-pill px-4 shadow-sm text-white" 
                                                                   style={{ backgroundColor: colors.primary }}>
@@ -157,7 +179,7 @@ function DaftarUjian() {
                                                             </Link>
                                                         ) : (
                                                             <button className="btn btn-secondary rounded-pill px-4 fw-bold shadow-sm" disabled>
-                                                                KESEMPATAN HABIS
+                                                                SUDAH DIKERJAKAN
                                                             </button>
                                                         )}
                                                         
@@ -172,24 +194,22 @@ function DaftarUjian() {
                                             </div>
                                         </div>
                                     </div>
-                                    {/* Aksesoris garis bawah card */}
                                     <div style={{ height: '4px', background: isAdmin ? colors.primary : colors.secondary, opacity: 0.3 }}></div>
                                 </div>
                             </div>
                         );
                     }) : (
                         <div className="col-12 text-center py-5 bg-white shadow-sm rounded-4">
-                            <div className="display-4 opacity-25 mb-3">📂</div>
-                            <h5 className="text-muted">Tidak Ada Ujian Tersedia</h5>
-                            <p className="text-muted small px-5">Silahkan hubungi pengajar atau admin jika jadwal ujian belum muncul di sini.</p>
+                            <div className="display-4 opacity-25 mb-3">📁</div>
+                            <h5 className="text-muted fw-bold">Belum Ada Ujian Tersedia</h5>
+                            <p className="text-muted small px-5">Hubungi Admin jika jadwal ujian Anda tidak terdaftar di sini.</p>
                         </div>
                     )}
                 </div>
 
-                {/* Footer Note */}
                 <div className="text-center mt-5">
                     <p className="text-muted small">
-                        Pastikan Anda memiliki <strong>Token</strong> yang valid dari pengawas sebelum memulai ujian.
+                        Pusat Evaluasi Digital &copy; 2026 - SMP Negeri 1 Gamping
                     </p>
                 </div>
             </div>

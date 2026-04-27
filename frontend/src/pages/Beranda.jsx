@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
+import Swal from 'sweetalert2'; // --- 1. Import Swal ---
 
 function Beranda() {
   const role = localStorage.getItem('role');
@@ -13,7 +14,7 @@ function Beranda() {
   const colors = {
     primary: '#023874',    // Biru Navy Elit
     secondary: '#B8860B',  // Emas Tua (Aksen)
-    bgLight: '#F4F1EA',    // Krem Putih (Kesan Kertas Mahal)
+    bgLight: '#F4F1EA',    // Krem Putih
     white: '#ffffff'
   };
 
@@ -45,11 +46,36 @@ function Beranda() {
     return () => clearInterval(interval);
   }, [nis, role]);
 
+  // --- 2. Ganti handleLogout dengan SweetAlert2 ---
   const handleLogout = () => {
-    if (window.confirm("Konfirmasi: Keluar dari sistem manajemen akademik?")) {
-      localStorage.clear();
-      navigate('/');
-    }
+    Swal.fire({
+      title: 'Konfirmasi Keluar',
+      text: "Apakah Anda yakin ingin mengakhiri sesi manajemen akademik ini?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: colors.primary,
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, Keluar',
+      cancelButtonText: 'Batal',
+      background: colors.white,
+      iconColor: colors.secondary,
+      borderRadius: '15px'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.clear();
+        // Popup sukses kecil sebelum redirect
+        Swal.fire({
+            title: 'Berhasil Keluar',
+            text: 'Sesi Anda telah dihentikan.',
+            icon: 'success',
+            timer: 1000,
+            showConfirmButton: false,
+            iconColor: colors.primary
+        }).then(() => {
+            navigate('/');
+        });
+      }
+    });
   };
 
   return (
@@ -63,7 +89,7 @@ function Beranda() {
           .menu-card-elit:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important; }
           .icon-box { width: 60px; height: 60px; background-color: ${colors.bgLight}; color: ${colors.primary}; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
           .admin-bar-card { background-color: ${colors.white}; border-radius: 15px; border: 1px solid rgba(0,0,0,0.05); transition: 0.3s; }
-          .admin-bar-card:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+          .admin-bar-card:hover { transform: scale(1.01); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
         `}
       </style>
 
@@ -85,6 +111,11 @@ function Beranda() {
 
       <div className="container px-4" style={{ maxWidth: '1000px' }}>
         
+        {/* INFO WAKTU (Tambahan visual) */}
+        <div className="text-end mb-3">
+            <small className="fw-bold text-muted" style={{ letterSpacing: '0.5px' }}>📅 {waktu}</small>
+        </div>
+
         {/* HERO BANNER */}
         <div className="welcome-banner p-4 p-md-5 mb-5 shadow-lg text-white">
           <div className="row align-items-center">
@@ -93,7 +124,7 @@ function Beranda() {
                 Selamat Datang, {profil.nama} 
                 {(role === 'admin' || nis === 'admin') && <span className="ms-2 badge bg-white text-dark fw-bold" style={{fontSize:'0.4em', verticalAlign:'middle'}}>ADMIN</span>}
               </h1>
-              <p className="lead opacity-75 mb-0">Sistem CBT dan Rekapitulasi Nilai</p>
+              <p className="lead opacity-75 mb-0">Sistem CBT dan Rekapitulasi Nilai Online</p>
             </div>
             <div className="col-md-4 text-md-end mt-4 mt-md-0">
                <span className="badge px-4 py-2 rounded-pill shadow-sm fw-bold" style={{ backgroundColor: colors.secondary, color: colors.primary }}>
@@ -103,7 +134,7 @@ function Beranda() {
           </div>
         </div>
 
-        {/* MENU UTAMA SISWA (Atas) */}
+        {/* MENU UTAMA SISWA */}
         <div className="row g-4">
           <div className="col-md-4">
             <Link to="/profil" className="card menu-card-elit p-4 shadow-sm h-100 text-decoration-none">
@@ -144,7 +175,7 @@ function Beranda() {
           )}
         </div>
 
-        {/* --- AREA AKSES KONTROL ADMIN (Bawah) --- */}
+        {/* --- AREA ADMIN --- */}
         {(role === 'admin' || nis === 'admin') && (
           <div className="mt-5 pt-4">
             <div className="d-flex align-items-center gap-3 mb-4 text-muted fw-bold text-uppercase" style={{ letterSpacing: '2px', fontSize: '0.8rem' }}>
@@ -153,7 +184,6 @@ function Beranda() {
             </div>
             
             <div className="row g-3">
-              {/* MENU KELOLA CBT (Turun ke bawah sesuai gambar) */}
               <div className="col-12 mb-2">
                 <Link to="/daftar-ujian" className="text-decoration-none">
                   <div className="card admin-bar-card p-4 shadow-sm">
@@ -169,7 +199,6 @@ function Beranda() {
                 </Link>
               </div>
 
-              {/* MENU MANAJEMEN NILAI UJIAN */}
               <div className="col-12">
                 <Link to="/admin" className="text-decoration-none">
                   <div className="card admin-bar-card p-4 shadow-sm">

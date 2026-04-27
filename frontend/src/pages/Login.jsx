@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
+import Swal from 'sweetalert2'; // --- Tambahkan Import ---
 
 function Login() {
   const [nis, setNis] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -20,14 +20,23 @@ function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
     setLoading(true);
 
     // 1. LOGIKA UNTUK ADMIN (Statik)
     if (nis === 'admin' && password === 'Yogatama123') {
       localStorage.setItem('nis', 'admin');
       localStorage.setItem('role', 'admin');
-      navigate('/beranda'); // Diarahkan ke Dashboard Utama
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Login Berhasil',
+        text: 'Selamat datang, Administrator!',
+        timer: 1500,
+        showConfirmButton: false,
+        iconColor: colors.secondary
+      }).then(() => {
+        navigate('/beranda');
+      });
       return;
     } 
 
@@ -41,15 +50,40 @@ function Login() {
       if (response.data.success) {
         localStorage.setItem('nis', response.data.user.nis); 
         localStorage.setItem('role', 'siswa');
-        navigate('/beranda');
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Akses Diterima',
+          text: `Selamat datang, ${response.data.user.nama}!`,
+          timer: 1500,
+          showConfirmButton: false,
+          iconColor: colors.primary
+        }).then(() => {
+          navigate('/beranda');
+        });
+      } else {
+        // Jika API kirim success false
+        Swal.fire({
+          icon: 'error',
+          title: 'Login Gagal',
+          text: response.data.message || 'NIS atau Password salah.',
+          confirmButtonColor: colors.primary
+        });
       }
     } catch (err) {
       console.error("Login Error:", err);
+      let errMsg = "Terjadi kesalahan pada server.";
+      
       if (err.response && err.response.data) {
-        setErrorMsg(err.response.data.message || "Kredensial tidak valid.");
-      } else {
-        setErrorMsg("Koneksi ke server gagal.");
+        errMsg = err.response.data.message || "Kredensial tidak valid.";
       }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Opps...',
+        text: errMsg,
+        confirmButtonColor: colors.primary
+      });
     } finally {
       setLoading(false);
     }
@@ -91,17 +125,11 @@ function Login() {
             <div style={{ width: '40px', height: '3px', backgroundColor: colors.secondary, margin: '8px auto' }}></div>
           </div>
           
-          {errorMsg && (
-            <div className="alert alert-danger py-2 text-center small border-0 shadow-sm mb-4" style={{ borderRadius: '8px' }}>
-              ⚠️ {errorMsg}
-            </div>
-          )}
-
           <form onSubmit={handleLogin}>
             <div className="mb-3">
               <label className="form-label small fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>User ID / NIS</label>
               <div className="input-group">
-                <span className="input-group-text bg-light border-0"><i className="bi bi-person"></i>👤</span>
+                <span className="input-group-text bg-light border-0">👤</span>
                 <input 
                   type="text" 
                   className="form-control border-0 bg-light" 
