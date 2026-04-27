@@ -8,11 +8,10 @@ function AdminExam() {
     const navigate = useNavigate();
     const editId = searchParams.get('edit');
 
-    // Palette Warna Eksklusif
     const colors = {
-        primary: '#023874',    // Biru Navy Elit
-        secondary: '#B8860B',  // Emas Tua
-        bgLight: '#F4F1EA',    // Krem Putih
+        primary: '#023874',
+        secondary: '#B8860B',
+        bgLight: '#F4F1EA',
         white: '#ffffff'
     };
 
@@ -22,6 +21,7 @@ function AdminExam() {
     const [durasi, setDurasi] = useState(60);
     const [targetNilai, setTargetNilai] = useState(100);
     const [maxAttempt, setMaxAttempt] = useState(1); 
+    const [token, setToken] = useState(''); // State Token Baru
     const [idUjianBaru, setIdUjianBaru] = useState(editId || null);
     const [listMapel, setListMapel] = useState([]);
     const [showInfoUjian, setShowInfoUjian] = useState(editId ? false : true);
@@ -45,8 +45,20 @@ function AdminExam() {
         if (editId) {
             fetchInfoUjian();
             fetchExistingSoal();
+        } else {
+            generateToken(); // Generate token otomatis jika buat ujian baru
         }
     }, [editId]);
+
+    // FUNGSI GENERATE TOKEN OTOMATIS
+    const generateToken = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Tanpa O dan I agar tidak bingung
+        let result = '';
+        for (let i = 0; i < 5; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setToken(result);
+    };
 
     const fetchMapel = async () => {
         try {
@@ -65,6 +77,7 @@ function AdminExam() {
                 setDurasi(current.durasi);
                 setTargetNilai(current.total_bobot || 100);
                 setMaxAttempt(current.max_attempt || 1);
+                setToken(current.token || ''); // Ambil token dari database
             }
         } catch (err) { console.error(err); }
     };
@@ -88,7 +101,7 @@ function AdminExam() {
     };
 
     const simpanInfoUjian = async () => {
-        if (!judul || !mapelId) return alert("Lengkapi data utama ujian!");
+        if (!judul || !mapelId || !token) return alert("Lengkapi data utama termasuk Token!");
         const action = editId ? 'update_ujian' : 'tambah_ujian';
         const res = await axios.post(`${API_BASE_URL}/exam/exam_controller.php?action=${action}`, {
             id_ujian: editId || idUjianBaru, 
@@ -96,7 +109,8 @@ function AdminExam() {
             id_mapel: mapelId, 
             durasi: durasi, 
             total_bobot: targetNilai,
-            max_attempt: maxAttempt 
+            max_attempt: maxAttempt,
+            token: token.toUpperCase() // Kirim token ke backend
         });
         if (res.data.success) {
             if (!editId) setIdUjianBaru(res.data.id_ujian);
@@ -161,7 +175,6 @@ function AdminExam() {
     return (
         <div style={{ backgroundColor: colors.bgLight, minHeight: '100vh', paddingBottom: '50px', fontFamily: "'Inter', sans-serif" }}>
             
-            {/* NAVBAR ELIT */}
             <nav className="navbar shadow-sm py-3 mb-5" style={{ backgroundColor: colors.primary, borderBottom: `4px solid ${colors.secondary}` }}>
                 <div className="container-fluid px-md-5">
                     <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
@@ -178,7 +191,6 @@ function AdminExam() {
                 <div className="row g-4">
                     <div className={editId ? "col-lg-8" : "col-lg-10 mx-auto"}>
                         
-                        {/* --- I. INFO UJIAN --- */}
                         <div className="card shadow-sm border-0 mb-4 overflow-hidden" style={{ borderRadius: '15px' }}>
                             <div className="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
                                  style={{ cursor: 'pointer', borderLeft: `6px solid ${colors.secondary}` }} onClick={() => setShowInfoUjian(!showInfoUjian)}>
@@ -213,10 +225,26 @@ function AdminExam() {
                                                 <button className="btn btn-dark" onClick={() => navigate('/manage-mapel-exam')}>⚙️</button>
                                             </div>
                                         </div>
-                                        <div className="col-md-6">
-                                            <label className="small fw-bold text-muted text-uppercase mb-2">Durasi Waktu (Menit)</label>
+                                        <div className="col-md-3">
+                                            <label className="small fw-bold text-muted text-uppercase mb-2">Durasi (Menit)</label>
                                             <input className="form-control border-0 bg-light py-2 px-3" style={{borderRadius: '10px'}} type="number" value={durasi} onChange={e => setDurasi(e.target.value)} />
                                         </div>
+
+                                        {/* BAGIAN TOKEN DENGAN GENERATE OTOMATIS */}
+                                        <div className="col-md-3">
+                                            <label className="small fw-bold text-success text-uppercase mb-2">Token Masuk</label>
+                                            <div className="input-group">
+                                                <input 
+                                                    className="form-control border-0 bg-success bg-opacity-10 py-2 px-3 fw-bold text-success" 
+                                                    style={{borderRadius: '10px 0 0 10px', letterSpacing: '2px'}} 
+                                                    value={token} 
+                                                    onChange={e => setToken(e.target.value.toUpperCase())} 
+                                                    placeholder="TOKEN"
+                                                />
+                                                <button className="btn btn-success" type="button" onClick={generateToken} title="Generate Token Acak">🎲</button>
+                                            </div>
+                                        </div>
+
                                         <div className="col-12 text-end mt-4">
                                             <button className="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm" style={{ backgroundColor: colors.primary }} onClick={simpanInfoUjian}>SIMPAN KONFIGURASI</button>
                                         </div>
@@ -307,9 +335,8 @@ function AdminExam() {
                         )}
                     </div>
 
-                    {/* --- III. NAVIGASI --- */}
-                    {idUjianBaru && editId && (
-                        <div className="col-lg-4">
+                    <div className="col-lg-4">
+                        {idUjianBaru && editId && (
                             <div className="card shadow-sm border-0 sticky-top overflow-hidden" style={{ borderRadius: '15px', top: '20px' }}>
                                 <div className="card-header bg-white py-3 border-0" style={{ borderLeft: `6px solid ${colors.secondary}` }}>
                                     <h6 className="fw-bold m-0 text-dark text-uppercase" style={{ letterSpacing: '1px' }}>Navigasi Butir Soal</h6>
@@ -349,8 +376,8 @@ function AdminExam() {
                                     <button onClick={() => navigate('/daftar-ujian')} className="btn btn-outline-dark btn-sm rounded-pill px-4">Selesai & Tutup Panel</button>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

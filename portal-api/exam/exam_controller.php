@@ -26,7 +26,7 @@ switch ($action) {
         echo json_encode($data);
         break;
 
-    // --- 2. DAFTAR UJIAN ---
+    // --- 2. DAFTAR UJIAN (ADMIN/SISWA) ---
     case 'get_list_ujian':
         $nis = mysqli_real_escape_string($conn, $_GET['nis'] ?? '');
         $sql = "SELECT u.*, m.nama_mapel AS mapel, 
@@ -40,7 +40,15 @@ switch ($action) {
         echo json_encode($data);
         break;
 
-    // --- 3. RIWAYAT NILAI (SISWA) ---
+    // --- 3. INFO DETAIL UJIAN (UNTUK VERIFIKASI TOKEN) ---
+    case 'get_info_ujian':
+        $id = (int)$_GET['id_ujian'];
+        $sql = "SELECT judul_ujian, durasi, token, total_bobot, max_attempt FROM exam_ujian WHERE id_ujian = $id";
+        $res = $conn->query($sql);
+        echo json_encode($res->fetch_assoc());
+        break;
+
+    // --- 4. RIWAYAT NILAI (SISWA) ---
     case 'get_riwayat_nilai':
         $nis = mysqli_real_escape_string($conn, $_GET['nis']);
         $id_ujian = (int)$_GET['id_ujian'];
@@ -59,7 +67,7 @@ switch ($action) {
         echo json_encode($data);
         break;
 
-    // --- 4. AMBIL SOAL ---
+    // --- 5. AMBIL SOAL & OPSI ---
     case 'get_soal':
         $id_ujian = (int)$_GET['id_ujian'];
         $res_soal = $conn->query("SELECT * FROM exam_soal WHERE id_ujian = $id_ujian ORDER BY id_soal ASC");
@@ -75,7 +83,7 @@ switch ($action) {
         echo json_encode($data);
         break;
 
-    // --- 5. SUBMIT JAWABAN ---
+    // --- 6. SUBMIT JAWABAN SISWA ---
     case 'submit_ujian':
         $input = json_decode(file_get_contents("php://input"), true);
         $nis = mysqli_real_escape_string($conn, $input['nis']);
@@ -88,23 +96,23 @@ switch ($action) {
         $kunci_data = [];
         while($k = $res_kunci->fetch_assoc()) { $kunci_data[$k['id_soal']][] = $k; }
 
-        $skor_didapat = 0; $total_bobot_ujian = 0;
+        $skor_didapat = 0; $total_bobot_soal = 0;
         foreach ($kunci_data as $id_s => $opsis) {
             $tipe = $opsis[0]['tipe_soal'];
             $bobot = (float)$opsis[0]['bobot'];
-            $total_bobot_ujian += $bobot;
+            $total_bobot_soal += $bobot;
             if ($tipe === 'pilgan') {
-                $kunci_benar = null;
-                foreach($opsis as $o) { if($o['is_benar'] == 1) $kunci_benar = $o['id_opsi']; }
-                if (isset($jawaban_siswa[$id_s]) && $jawaban_siswa[$id_s] == $kunci_benar) $skor_didapat += $bobot;
+                $k_id = null;
+                foreach($opsis as $o) if($o['is_benar'] == 1) $k_id = $o['id_opsi'];
+                if (isset($jawaban_siswa[$id_s]) && $jawaban_siswa[$id_s] == $k_id) $skor_didapat += $bobot;
             } else if ($tipe === 'esai') {
                 $k_e = trim($opsis[0]['kunci_esai']);
                 if (isset($jawaban_siswa[$id_s]) && stripos(trim($jawaban_siswa[$id_s]), $k_e) !== false) $skor_didapat += $bobot;
             }
         }
-        $q_target = $conn->query("SELECT total_bobot FROM exam_ujian WHERE id_ujian = $id_ujian");
-        $target_maksimal = (float)($q_target->fetch_assoc()['total_bobot'] ?? 100);
-        $nilai_akhir = ($total_bobot_ujian > 0) ? ($skor_didapat / $total_bobot_ujian) * $target_maksimal : 0;
+        $q_u = $conn->query("SELECT total_bobot FROM exam_ujian WHERE id_ujian = $id_ujian");
+        $target_maks = (float)($q_u->fetch_assoc()['total_bobot'] ?? 100);
+        $nilai_akhir = ($total_bobot_soal > 0) ? ($skor_didapat / $total_bobot_soal) * $target_maks : 0;
         $j_json = mysqli_real_escape_string($conn, json_encode($jawaban_siswa));
         $sql = "INSERT INTO exam_hasil (nis, id_ujian, jawaban_json, nilai_total, status_koreksi, is_publish, waktu_mulai) 
                 VALUES ('$nis', $id_ujian, '$j_json', $nilai_akhir, 'selesai', 0, '$waktu_mulai')";
@@ -112,30 +120,24 @@ switch ($action) {
         else echo json_encode(["success" => false, "error" => $conn->error]);
         break;
 
-    // --- 6. PUBLISH MASAL ---
+    // --- 7. PUBLISH MASAL ---
     case 'publish_masal':
-    $input = json_decode(file_get_contents("php://input"), true);
-    $ids = $input['ids'] ?? [];
-    $status = (int)($input['status'] ?? 1); // <--- Sekarang statusnya dinamis (1 atau 0)
-    
-    if (!empty($ids)) {
-        $id_list = implode(',', array_map('intval', $ids));
-        $sql = "UPDATE exam_hasil SET is_publish = $status WHERE id_hasil IN ($id_list)";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true, "count" => $conn->affected_rows]);
-        } else {
-            echo json_encode(["success" => false, "error" => $conn->error]);
+        $input = json_decode(file_get_contents("php://input"), true);
+        $ids = $input['ids'] ?? [];
+        $status = (int)($input['status'] ?? 1);
+        if (!empty($ids)) {
+            $id_list = implode(',', array_map('intval', $ids));
+            $sql = "UPDATE exam_hasil SET is_publish = $status WHERE id_hasil IN ($id_list)";
+            if ($conn->query($sql)) echo json_encode(["success" => true, "count" => $conn->affected_rows]);
+            else echo json_encode(["success" => false, "error" => $conn->error]);
         }
-    }
-    break;
+        break;
 
-    // --- 7. GET NILAI ADMIN (BERDASARKAN PILIHAN UJIAN) ---
+    // --- 8. REKAP NILAI ADMIN (FILTER UJIAN) ---
     case 'get_semua_nilai':
         $id_u = (int)($_GET['id_ujian'] ?? 0);
         $where = "WHERE 1=1";
-        if ($id_u > 0) {
-            $where .= " AND h.id_ujian = $id_u";
-        }
+        if ($id_u > 0) $where .= " AND h.id_ujian = $id_u";
         $sql = "SELECT h.*, s.nama, u.judul_ujian FROM exam_hasil h
                 LEFT JOIN siswa s ON h.nis = s.nis
                 LEFT JOIN exam_ujian u ON h.id_ujian = u.id_ujian
@@ -150,7 +152,7 @@ switch ($action) {
         echo json_encode($data);
         break;
 
-    // --- 8. GET NILAI SISWA ---
+    // --- 9. GET NILAI SISWA ---
     case 'get_nilai_siswa':
         $nis = mysqli_real_escape_string($conn, $_GET['nis']);
         $sql = "SELECT h.*, s.nama, u.judul_ujian FROM exam_hasil h
@@ -165,6 +167,26 @@ switch ($action) {
             $data[] = $row; 
         }
         echo json_encode($data);
+        break;
+
+    // --- 10. CRUD UJIAN (TERMASUK TOKEN) ---
+    case 'tambah_ujian':
+    case 'update_ujian':
+        $input = json_decode(file_get_contents("php://input"), true);
+        $judul = $conn->real_escape_string($input['judul_ujian']);
+        $mapel = (int)$input['id_mapel'];
+        $durasi = (int)$input['durasi'];
+        $target = (float)($input['total_bobot'] ?? 100);
+        $attempt = (int)($input['max_attempt'] ?? 1);
+        $token = $conn->real_escape_string($input['token'] ?? 'ABCDE');
+
+        if ($action == 'tambah_ujian') {
+            $sql = "INSERT INTO exam_ujian (judul_ujian, id_mapel, durasi, total_bobot, max_attempt, token, status) VALUES ('$judul', $mapel, $durasi, $target, $attempt, '$token', 'aktif')";
+        } else {
+            $id = (int)$input['id_ujian'];
+            $sql = "UPDATE exam_ujian SET judul_ujian='$judul', id_mapel=$mapel, durasi=$durasi, total_bobot=$target, max_attempt=$attempt, token='$token' WHERE id_ujian=$id";
+        }
+        if ($conn->query($sql)) echo json_encode(["success" => true, "id_ujian" => ($action == 'tambah_ujian' ? $conn->insert_id : $id)]);
         break;
 
     case 'toggle_publish':
@@ -184,21 +206,21 @@ switch ($action) {
     case 'get_detail_hasil':
         $id_hasil = (int)$_GET['id_hasil'];
         $q_hasil = $conn->query("SELECT * FROM exam_hasil WHERE id_hasil = $id_hasil");
-        $data_hasil = $q_hasil->fetch_assoc();
-        $jawaban_siswa = json_decode($data_hasil['jawaban_json'], true);
-        $id_ujian = $data_hasil['id_ujian'];
-        $res_soal = $conn->query("SELECT * FROM exam_soal WHERE id_ujian = $id_ujian ORDER BY id_soal ASC");
+        $data_h = $q_hasil->fetch_assoc();
+        $jawaban_s = json_decode($data_h['jawaban_json'], true);
+        $id_u = $data_h['id_ujian'];
+        $res_soal = $conn->query("SELECT * FROM exam_soal WHERE id_ujian = $id_u ORDER BY id_soal ASC");
         $detail = [];
         while($soal = $res_soal->fetch_assoc()) {
             $id_s = $soal['id_soal'];
-            $res_opsi = $conn->query("SELECT * FROM exam_opsi WHERE id_soal = $id_s");
+            $res_o = $conn->query("SELECT * FROM exam_opsi WHERE id_soal = $id_s");
             $opsi = [];
-            while($o = $res_opsi->fetch_assoc()) { $opsi[] = $o; }
+            while($o = $res_o->fetch_assoc()) { $opsi[] = $o; }
             $soal['opsi'] = $opsi;
-            $soal['jawaban_siswa'] = $jawaban_siswa[$id_s] ?? null;
+            $soal['jawaban_siswa'] = $jawaban_s[$id_s] ?? null;
             $detail[] = $soal;
         }
-        echo json_encode(["info" => $data_hasil, "soal" => $detail]);
+        echo json_encode(["info" => $data_h, "soal" => $detail]);
         break;
 
     default:

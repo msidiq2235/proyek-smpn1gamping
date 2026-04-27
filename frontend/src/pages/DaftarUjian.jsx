@@ -58,7 +58,7 @@ function DaftarUjian() {
                     <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
                         <img src="logosekolah.png" alt="Logo" style={{ width: '35px' }} />
                         <span style={{ letterSpacing: '1px', fontSize: '1.1rem' }}>
-                            {isAdmin ? 'ADMINISTRASI CBT' : 'E-EXAMINATION'}
+                            {isAdmin ? 'MANAJEMEN UJIAN' : 'E-EXAMINATION'}
                         </span>
                     </span>
                     <button onClick={() => navigate('/beranda')} className="btn btn-outline-light btn-sm fw-bold px-4 rounded-pill shadow-sm">
@@ -71,7 +71,7 @@ function DaftarUjian() {
                 
                 {/* Judul Halaman */}
                 <div className="mb-4 border-start border-4 border-primary ps-3">
-                    <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Manajemen Soal' : 'Daftar Evaluasi Aktif'}</h3>
+                    <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Katalog Paket Soal' : 'Daftar Evaluasi Aktif'}</h3>
                     <p className="text-muted small m-0">Portal Akademik SMP Negeri 1 Gamping</p>
                 </div>
 
@@ -105,11 +105,18 @@ function DaftarUjian() {
                                     <div className="card-body p-4">
                                         <div className="row align-items-center">
                                             <div className="col-md-8">
-                                                <div className="d-flex align-items-center gap-2 mb-2">
+                                                <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                                                     <span className="badge px-3 py-2 rounded-pill" style={{ backgroundColor: colors.bgLight, color: colors.primary, border: `1px solid ${colors.primary}33` }}>
                                                         {u.mapel}
                                                     </span>
                                                     <span className="text-muted small fw-bold">⏱ {u.durasi} Menit</span>
+                                                    
+                                                    {/* INFO TOKEN KHUSUS ADMIN */}
+                                                    {isAdmin && (
+                                                        <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold">
+                                                            🔑 TOKEN: {u.token}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <h4 className="fw-bold text-dark mb-3">{u.judul_ujian}</h4>
                                                 
@@ -132,7 +139,7 @@ function DaftarUjian() {
                                             <div className="col-md-4 text-md-end mt-4 mt-md-0">
                                                 {isAdmin ? (
                                                     <div className="d-flex flex-column gap-2">
-                                                        <Link to={`/admin-exam?edit=${u.id_ujian}`} className="btn btn-warning fw-bold rounded-pill px-4 shadow-sm">
+                                                        <Link to={`/admin-exam?edit=${u.id_ujian}`} className="btn btn-warning fw-bold rounded-pill px-4 shadow-sm text-dark">
                                                             ✏️ EDIT SOAL
                                                         </Link>
                                                         <button onClick={() => hapusUjian(u.id_ujian)} className="btn btn-outline-danger btn-sm rounded-pill border-0">
@@ -180,7 +187,7 @@ function DaftarUjian() {
                 {/* Footer Note */}
                 <div className="text-center mt-5">
                     <p className="text-muted small">
-                        Pastikan koneksi internet stabil sebelum menekan tombol <strong>Mulai Ujian</strong>.
+                        Pastikan Anda memiliki <strong>Token</strong> yang valid dari pengawas sebelum memulai ujian.
                     </p>
                 </div>
             </div>
