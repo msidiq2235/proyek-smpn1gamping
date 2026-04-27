@@ -93,7 +93,7 @@ function Beranda() {
                 Selamat Datang, {profil.nama} 
                 {(role === 'admin' || nis === 'admin') && <span className="ms-2 badge bg-white text-dark fw-bold" style={{fontSize:'0.4em', verticalAlign:'middle'}}>ADMIN</span>}
               </h1>
-              <p className="lead opacity-75 mb-0">E-Learning & Academic Management System</p>
+              <p className="lead opacity-75 mb-0">Sistem CBT dan Rekapitulasi Nilai</p>
             </div>
             <div className="col-md-4 text-md-end mt-4 mt-md-0">
                <span className="badge px-4 py-2 rounded-pill shadow-sm fw-bold" style={{ backgroundColor: colors.secondary, color: colors.primary }}>
@@ -176,7 +176,7 @@ function Beranda() {
                     <div className="row align-items-center">
                         <div className="col-auto"><div className="icon-box m-0 shadow-sm" style={{ backgroundColor: colors.secondary, color: '#fff' }}>📜</div></div>
                         <div className="col">
-                            <h5 className="fw-bold text-dark mb-1">Manajemen Nilai Ujian</h5>
+                            <h5 className="fw-bold text-dark mb-1">Sistem Rekap Nilai</h5>
                             <p className="text-muted small mb-0">Input nilai kategori ujian, kelola mapel utama, dan konfigurasi judul laporan.</p>
                         </div>
                         <div className="col-auto"><span className="btn btn-sm btn-dark fw-bold rounded-pill px-4">Buka Panel</span></div>

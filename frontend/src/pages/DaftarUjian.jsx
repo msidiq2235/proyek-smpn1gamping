@@ -58,11 +58,11 @@ function DaftarUjian() {
                     <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
                         <img src="logosekolah.png" alt="Logo" style={{ width: '35px' }} />
                         <span style={{ letterSpacing: '1px', fontSize: '1.1rem' }}>
-                            {isAdmin ? 'MANAJEMEN UJIAN' : 'E-EXAMINATION'}
+                            {isAdmin ? 'MANAJEMEN UJIAN' : 'DAFTAR UJIAN'}
                         </span>
                     </span>
                     <button onClick={() => navigate('/beranda')} className="btn btn-outline-light btn-sm fw-bold px-4 rounded-pill shadow-sm">
-                        🏠 BERANDA
+                        BERANDA
                     </button>
                 </div>
             </nav>
@@ -71,8 +71,8 @@ function DaftarUjian() {
                 
                 {/* Judul Halaman */}
                 <div className="mb-4 border-start border-4 border-primary ps-3">
-                    <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Katalog Paket Soal' : 'Daftar Evaluasi Aktif'}</h3>
-                    <p className="text-muted small m-0">Portal Akademik SMP Negeri 1 Gamping</p>
+                    <h3 className="fw-bold text-dark m-0">{isAdmin ? 'Daftar Soal' : 'Daftar Ujian Aktif'}</h3>
+                    <p className="text-muted small m-0">SMP Negeri 1 Gamping</p>
                 </div>
 
                 {/* Quick Actions Khusus Admin */}
@@ -164,7 +164,7 @@ function DaftarUjian() {
                                                         {sudahPernah && (
                                                             <button onClick={() => navigate(`/nilai-exam?id_ujian=${u.id_ujian}`)} 
                                                                     className="btn btn-outline-success btn-sm rounded-pill border-2 fw-bold">
-                                                                📊 LIHAT HASIL
+                                                                LIHAT HASIL
                                                             </button>
                                                         )}
                                                     </div>

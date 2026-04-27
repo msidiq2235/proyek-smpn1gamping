@@ -260,7 +260,7 @@ function Admin() {
           <span className="navbar-brand fw-bold text-white d-flex align-items-center gap-3">
             <img src="logosekolah.png" alt="Logo" style={{ width: '45px', filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.5))' }} /> 
             <div>
-                <span style={{ fontSize: '1.2rem', display: 'block', lineHeight: '1' }}>PANEL ADMINISTRATOR</span>
+                <span style={{ fontSize: '1.2rem', display: 'block', lineHeight: '1' }}>PANEL ADMINISTRATOR REKAP NILAI</span>
                 <span style={{ fontSize: '0.8rem', fontWeight: 'normal', opacity: '0.8' }}>SMP NEGERI 1 GAMPING</span>
             </div>
           </span>
