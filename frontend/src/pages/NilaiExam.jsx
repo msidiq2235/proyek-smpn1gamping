@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
-import Swal from 'sweetalert2'; // --- 1. Import Swal ---
+import Swal from 'sweetalert2';
 
 function NilaiExam() {
     const [nilai, setNilai] = useState([]);
@@ -55,11 +55,25 @@ function NilaiExam() {
         } catch (err) { console.error("Gagal fetch data"); }
     };
 
+    // --- FIX DURASI 420 MENIT ---
     const hitungDurasi = (mulai, selesai) => {
-        if (!mulai || !selesai) return "-";
-        const diffMs = new Date(selesai) - new Date(mulai);
+        if (!mulai || !selesai || selesai === "0000-00-00 00:00:00") return "-";
+        
+        // Gunakan replace spasi ke 'T' agar formatnya ISO (YYYY-MM-DDTHH:mm:ss)
+        // Ini memaksa browser menganggap ini waktu lokal, bukan UTC.
+        const start = new Date(mulai.replace(' ', 'T'));
+        const end = new Date(selesai.replace(' ', 'T'));
+        
+        const diffMs = end - start;
+        
+        // Proteksi jika selisih minus karena bug jam server
         if (diffMs < 0) return "0m 0s";
-        return `${Math.floor(diffMs / 60000)}m ${Math.floor((diffMs % 60000) / 1000)}s`;
+
+        const totalDetik = Math.floor(diffMs / 1000);
+        const m = Math.floor(totalDetik / 60);
+        const s = totalDetik % 60;
+        
+        return `${m}m ${s}s`;
     };
 
     const handlePublish = async (id, currentStatus) => {
@@ -70,8 +84,8 @@ function NilaiExam() {
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil',
-                text: `Status nilai berhasil ${newStatus === 1 ? 'dipublikasikan' : 'disembunyikan'}.`,
-                timer: 1500,
+                text: `Status nilai berhasil diperbarui.`,
+                timer: 1000,
                 showConfirmButton: false
             });
         } catch (err) { Swal.fire('Error', 'Gagal memperbarui status.', 'error'); }
@@ -100,7 +114,7 @@ function NilaiExam() {
             try {
                 const res = await axios.post(`${API_BASE_URL}/exam/exam_controller.php?action=publish_masal`, { ids, status });
                 if (res.data.success) {
-                    Swal.fire('Berhasil', `Seluruh nilai berhasil ${status === 1 ? 'dipublikasikan' : 'disembunyikan'}.`, 'success');
+                    Swal.fire('Berhasil', `Status masal berhasil diubah.`, 'success');
                     fetchData();
                 }
             } catch (err) { Swal.fire('Error', 'Gagal memproses data masal.', 'error'); }
@@ -122,7 +136,7 @@ function NilaiExam() {
             try {
                 await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=hapus_attempt&id_hasil=${id}`);
                 fetchData();
-                Swal.fire('Terhapus!', 'Data sesi ujian telah dihapus.', 'success');
+                Swal.fire('Terhapus!', 'Data telah dihapus.', 'success');
             } catch (err) { Swal.fire('Error', 'Gagal menghapus data.', 'error'); }
         }
     };
@@ -140,7 +154,7 @@ function NilaiExam() {
                         <img src="logosekolah.png" alt="Logo" style={{ width: '35px' }} />
                         <span style={{ letterSpacing: '1px' }}>{isAdmin ? 'ADMINISTRASI NILAI' : 'HASIL EVALUASI'}</span>
                     </span>
-                    <button onClick={() => navigate('/daftar-ujian')} className="btn btn-outline-light btn-sm fw-bold px-4 rounded-pill">⬅ KELUAR</button>
+                    <button onClick={() => navigate('/daftar-ujian')} className="btn btn-outline-light btn-sm fw-bold px-4 rounded-pill">KEMBALI</button>
                 </div>
             </nav>
 
@@ -158,8 +172,8 @@ function NilaiExam() {
                             <div className="col-md-7 text-md-end">
                                 {selectedUjian && (
                                     <div className="d-flex gap-2 justify-content-md-end">
-                                        <button onClick={() => handleActionMasal(1)} className="btn btn-success btn-sm fw-bold px-3 rounded-pill shadow-sm">📢 PUBLISH SEMUA</button>
-                                        <button onClick={() => handleActionMasal(0)} className="btn btn-danger btn-sm fw-bold px-3 rounded-pill shadow-sm">🔒 SEMBUNYIKAN SEMUA</button>
+                                        <button onClick={() => handleActionMasal(1)} className="btn btn-success btn-sm fw-bold px-3 rounded-pill shadow-sm">PUBLISH SEMUA</button>
+                                        <button onClick={() => handleActionMasal(0)} className="btn btn-danger btn-sm fw-bold px-3 rounded-pill shadow-sm">SEMBUNYIKAN SEMUA</button>
                                     </div>
                                 )}
                             </div>
@@ -170,7 +184,6 @@ function NilaiExam() {
                 <div className="row align-items-center mb-3 g-3">
                     <div className="col-md-6">
                         <h4 className="fw-bold text-dark m-0">Rekapitulasi Hasil</h4>
-                        {!selectedUjian && isAdmin && <small className="text-danger fw-bold italic">*Silahkan pilih paket ujian terlebih dahulu</small>}
                     </div>
                     <div className="col-md-6">
                         <div className="input-group shadow-sm border-0" style={{ borderRadius: '12px', overflow: 'hidden' }}>
@@ -188,7 +201,7 @@ function NilaiExam() {
                                     {isAdmin && <th className="ps-4 py-3">Nama Lengkap</th>}
                                     <th className="ps-4 py-3">Sesi / Evaluasi</th>
                                     <th className="text-center py-3">Skor Akhir</th>
-                                    <th className="text-center py-3">Durasi Kerjaan</th>
+                                    <th className="text-center py-3">Durasi</th>
                                     {isAdmin && <th className="text-center py-3">Visibilitas</th>}
                                     <th className="text-end pe-4 py-3">{isAdmin ? 'Aksi' : 'Diselesaikan'}</th>
                                 </tr>
@@ -197,7 +210,7 @@ function NilaiExam() {
                                 {filteredNilai.length > 0 ? filteredNilai.map((n, i) => (
                                     <tr key={i} style={{ fontSize: '14px' }}>
                                         {isAdmin && <td className="ps-4"><div className="fw-bold text-dark">{n.nama}</div><small className="text-muted">{n.nis}</small></td>}
-                                        <td className="ps-4"><div className="fw-bold" style={{ color: colors.primary }}>{n.percobaan_ke ? `Percobaan Ke-${n.percobaan_ke}` : n.judul_ujian}</div><small className="text-muted">{n.judul_ujian}</small></td>
+                                        <td className="ps-4"><div className="fw-bold" style={{ color: colors.primary }}>{n.percobaan_ke ? `Percobaan #${n.percobaan_ke}` : n.judul_ujian}</div><small className="text-muted">{n.judul_ujian}</small></td>
                                         <td className="text-center"><span className="badge rounded-pill px-3 py-2 fw-bold" style={{ backgroundColor: parseFloat(n.nilai) >= 75 ? '#198754' : colors.primary, minWidth: '45px' }}>{n.nilai}</span></td>
                                         <td className="text-center fw-bold text-muted">⏱ {hitungDurasi(n.waktu_mulai, n.waktu_selesai)}</td>
                                         {isAdmin && (
@@ -220,7 +233,7 @@ function NilaiExam() {
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="7" className="text-center p-5 text-muted">{isAdmin && !selectedUjian ? "Pilih paket ujian untuk melihat data." : "Belum ada riwayat pengerjaan."}</td></tr>
+                                    <tr><td colSpan="7" className="text-center p-5 text-muted">{isAdmin && !selectedUjian ? "Silahkan pilih paket ujian." : "Data tidak ditemukan."}</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -236,8 +249,8 @@ function NilaiExam() {
                     </div>
                     <div className="col-md-4">
                         <div className="p-3 bg-white rounded-4 shadow-sm border-start border-4 border-primary h-100">
-                            <small className="text-muted fw-bold d-block mb-1 text-uppercase">Total Rekaman</small>
-                            <h3 className="fw-bold m-0" style={{ color: colors.primary }}>{nilai.length} <small className="fs-6 fw-normal">Siswa/Sesi</small></h3>
+                            <small className="text-muted fw-bold d-block mb-1 text-uppercase">Total Data</small>
+                            <h3 className="fw-bold m-0" style={{ color: colors.primary }}>{nilai.length} <small className="fs-6 fw-normal">Sesi</small></h3>
                         </div>
                     </div>
                 </div>

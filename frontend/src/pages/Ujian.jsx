@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../apiConfig';
-import Swal from 'sweetalert2'; // Pastikan sudah install: npm install sweetalert2
+import Swal from 'sweetalert2';
 
 function Ujian() {
     const { id_ujian } = useParams();
     const navigate = useNavigate();
 
-    // --- STATE UTAMA ---
-    const [step, setStep] = useState('token'); // token -> petunjuk -> pengerjaan
+    const [step, setStep] = useState('token');
     const [inputToken, setInputToken] = useState('');
     const [infoUjian, setInfoUjian] = useState(null);
     const [listSoal, setListSoal] = useState([]);
@@ -24,8 +23,13 @@ function Ujian() {
         primary: '#023874', secondary: '#B8860B', bgLight: '#F4F1EA', textDark: '#1A1A1A' 
     };
 
+    // --- PERBAIKAN: Fungsi Helper Path Gambar ---
+    const getBaseUploadPath = () => {
+        // Membersihkan '/exam' jika ada di apiConfig agar mengarah ke root uploads
+        return API_BASE_URL.replace('/exam', '') + '/uploads/exam/';
+    };
+
     useEffect(() => {
-        // Ambil info dasar ujian
         axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=get_info_ujian&id_ujian=${id_ujian}`)
             .then(res => {
                 setInfoUjian(res.data);
@@ -37,7 +41,6 @@ function Ujian() {
             });
     }, [id_ujian]);
 
-    // Timer Logic
     useEffect(() => {
         let timer;
         if (step === 'pengerjaan' && timeLeft > 0) {
@@ -53,7 +56,6 @@ function Ujian() {
         if (!infoUjian) return;
         if (inputToken.toUpperCase() === infoUjian.token.toUpperCase()) {
             try {
-                // Tarik soal HANYA setelah token benar
                 const res = await axios.get(`${API_BASE_URL}/exam/exam_controller.php?action=get_soal&id_ujian=${id_ujian}`);
                 setListSoal(res.data);
                 setTimeLeft(parseInt(infoUjian.durasi) * 60);
@@ -107,7 +109,7 @@ function Ujian() {
         if (tipe === 'matching') {
             return Object.keys(jawabanSiswa).some(key => key.startsWith(`${id_soal}_`));
         }
-        return jawabanSiswa[id_soal] !== undefined && jawabanSiswa[id_soal] !== '';
+        return jawabanSiswa[id_soal] !== undefined && jawabanSiswa[id_soal] !== '' && jawabanSiswa[id_soal] !== null;
     };
 
     const formatTime = (seconds) => {
@@ -118,7 +120,6 @@ function Ujian() {
 
     if (loading) return <div className="text-center p-5 fw-bold">Menyiapkan...</div>;
 
-    // --- 1. VIEW TOKEN ---
     if (step === 'token') {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: colors.bgLight }}>
@@ -134,7 +135,6 @@ function Ujian() {
         );
     }
 
-    // --- 2. VIEW PETUNJUK ---
     if (step === 'petunjuk') {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: colors.bgLight }}>
@@ -151,25 +151,22 @@ function Ujian() {
         );
     }
 
-    // --- 3. VIEW PENGERJAAN ---
     const soalAktif = listSoal[currentIndex];
 
     return (
-        <div style={{ backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: '100px' }}>
-            {/* Header Sticky */}
+        <div style={{ backgroundColor: '#f9f9f9', minHeight: '100vh', paddingBottom: '100px', fontFamily: "'Inter', sans-serif" }}>
             <div className="sticky-top shadow-sm py-3 mb-4" style={{ backgroundColor: colors.primary, borderBottom: `4px solid ${colors.secondary}` }}>
                 <div className="container d-flex justify-content-between align-items-center">
                     <h5 className="fw-bold m-0 text-white d-none d-md-block">{infoUjian?.judul_ujian}</h5>
                     <div className={`badge rounded-pill px-4 py-2 fw-bold shadow-sm ${timeLeft < 300 ? 'bg-danger text-white' : 'bg-white'}`} style={{ fontSize: '1.1rem', color: timeLeft < 300 ? '#fff' : colors.primary }}>
                         ⏱ {formatTime(timeLeft)}
                     </div>
-                    <button className="btn btn-sm fw-bold rounded-pill px-4" onClick={() => handleSubmit(false)} style={{ backgroundColor: colors.secondary, color: '#fff' }}>SELESAI 🏁</button>
+                    <button className="btn btn-sm fw-bold rounded-pill px-4" onClick={() => handleSubmit(false)} style={{ backgroundColor: colors.secondary, color: '#fff' }}>SELESAI</button>
                 </div>
             </div>
 
             <div className="container py-2">
                 <div className="row g-4">
-                    {/* AREA SOAL */}
                     <div className="col-lg-8">
                         {soalAktif && (
                             <div className="card border-0 shadow-sm p-4 p-md-5 h-100" style={{ borderRadius: '20px' }}>
@@ -180,10 +177,22 @@ function Ujian() {
                                     </label>
                                 </div>
                                 
-                                <h5 className="fw-bold mb-4">{soalAktif.pertanyaan}</h5>
+                                {/* --- PERBAIKAN: BLOK GAMBAR SOAL --- */}
+                                {soalAktif.gambar && (
+                                    <div className="mb-4 text-center bg-light p-3 rounded-4 border">
+                                        <img 
+                                            src={`${getBaseUploadPath()}${soalAktif.gambar}`} 
+                                            alt="Bahan Soal" 
+                                            className="img-fluid rounded shadow-sm"
+                                            style={{ maxHeight: '350px', objectFit: 'contain' }}
+                                            onError={(e) => e.target.style.display = 'none'} 
+                                        />
+                                    </div>
+                                )}
+                                
+                                <h5 className="fw-bold mb-4" style={{ lineHeight: '1.6' }}>{soalAktif.pertanyaan}</h5>
                                 
                                 <div className="d-flex flex-column gap-3">
-                                    {/* PILGAN */}
                                     {soalAktif.tipe_soal === 'pilgan' && soalAktif.opsi.map(o => {
                                         const isSel = jawabanSiswa[soalAktif.id_soal] === o.id_opsi;
                                         return (
@@ -195,24 +204,22 @@ function Ujian() {
                                         );
                                     })}
 
-                                    {/* ESAI */}
                                     {soalAktif.tipe_soal === 'esai' && (
-                                        <textarea className="form-control border-2 p-3" rows="6" placeholder="Ketik jawaban..." 
+                                        <textarea className="form-control border-2 p-3 shadow-none" rows="6" placeholder="Ketik jawaban..." 
                                             value={jawabanSiswa[soalAktif.id_soal] || ''} 
                                             onChange={(e) => setJawabanSiswa({...jawabanSiswa, [soalAktif.id_soal]: e.target.value})}
                                             style={{ borderRadius: '15px' }} />
                                     )}
 
-                                    {/* MATCHING */}
                                     {soalAktif.tipe_soal === 'matching' && (
                                         <div className="bg-light p-3 rounded-4 border">
                                             {soalAktif.opsi.map((o) => {
                                                 const key = `${soalAktif.id_soal}_${o.id_opsi}`;
                                                 return (
-                                                    <div key={o.id_opsi} className="row align-items-center mb-3">
+                                                    <div key={o.id_opsi} className="row mb-3 align-items-center bg-white p-3 rounded-3 mx-0 border shadow-sm">
                                                         <div className="col-md-6 fw-bold small">{o.teks_opsi}</div>
                                                         <div className="col-md-6">
-                                                            <select className="form-select border-2" value={jawabanSiswa[key] || ''} onChange={(e) => setJawabanSiswa({...jawabanSiswa, [key]: e.target.value})} style={{ borderRadius: '10px' }}>
+                                                            <select className="form-select border-2 shadow-none" value={jawabanSiswa[key] || ''} onChange={(e) => setJawabanSiswa({...jawabanSiswa, [key]: e.target.value})} style={{ borderRadius: '10px' }}>
                                                                 <option value="">-- Pilih --</option>
                                                                 {soalAktif.opsi.map((opt, i) => <option key={i} value={opt.kunci_matching}>{opt.kunci_matching}</option>)}
                                                             </select>
@@ -225,16 +232,15 @@ function Ujian() {
                                 </div>
 
                                 <div className="d-flex justify-content-between mt-5 pt-4 border-top">
-                                    <button className="btn fw-bold px-4 rounded-pill border-2" disabled={currentIndex === 0} onClick={() => setCurrentIndex(currentIndex - 1)} style={{ color: colors.primary, borderColor: colors.primary }}>Sebelumnya</button>
+                                    <button className="btn fw-bold px-4 rounded-pill border-2" disabled={currentIndex === 0} onClick={() => setCurrentIndex(currentIndex - 1)} style={{ color: colors.primary, borderColor: colors.primary }}>Soal Sebelumnya</button>
                                     <button className="btn fw-bold px-4 rounded-pill shadow-sm" style={{ backgroundColor: colors.primary, color: '#fff' }} onClick={() => currentIndex < listSoal.length - 1 ? setCurrentIndex(currentIndex + 1) : handleSubmit(false)}>
-                                        {currentIndex === listSoal.length - 1 ? 'Selesai 🏁' : 'Selanjutnya ➡'}
+                                        {currentIndex === listSoal.length - 1 ? 'Selesai' : 'Selanjutnya'}
                                     </button>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* SIDEBAR NAVIGASI */}
                     <div className="col-lg-4">
                         <div className="card border-0 shadow-sm sticky-top" style={{ borderRadius: '20px', top: '100px' }}>
                             <div className="card-header border-0 py-3 text-center" style={{ backgroundColor: colors.primary, color: '#fff', borderTopLeftRadius: '20px', borderTopRightRadius: '20px' }}>

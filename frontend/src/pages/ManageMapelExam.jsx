@@ -30,39 +30,45 @@ function ManageMapelExam() {
     };
 
     const handleSimpan = async (e) => {
-        e.preventDefault();
-        if (!namaMapel.trim()) return Swal.fire('Opps', 'Nama Mata Pelajaran wajib diisi!', 'warning');
+    e.preventDefault();
+    if (!namaMapel.trim()) return Swal.fire('Opps', 'Nama Mata Pelajaran wajib diisi!', 'warning');
 
-        setLoading(true);
-        const action = idEdit ? 'update_mapel_exam' : 'tambah_mapel_exam';
-        
-        try {
-            const res = await axios.post(`${API_BASE_URL}/exam/exam_controller.php?action=${action}`, {
+    setLoading(true);
+    const action = idEdit ? 'update_mapel_exam' : 'tambah_mapel_exam';
+    
+    try {
+        // PERBAIKAN: Kirim data sebagai objek JSON murni {}
+        // Sesuai dengan PHP kamu yang pakai json_decode(file_get_contents("php://input"))
+        const res = await axios.post(
+            `${API_BASE_URL}/exam/exam_controller.php?action=${action}`, 
+            {
                 id_mapel: idEdit,
                 nama_mapel: namaMapel
-            });
-
-            if (res.data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: idEdit ? "Mata pelajaran diperbarui!" : "Mata pelajaran baru ditambahkan!",
-                    timer: 1500,
-                    showConfirmButton: false,
-                    iconColor: colors.primary
-                });
-                setNamaMapel('');
-                setIdEdit(null);
-                fetchMapel();
-            } else {
-                Swal.fire('Gagal', res.data.error || 'Terjadi kesalahan saat menyimpan.', 'error');
             }
-        } catch (err) {
-            Swal.fire('Error', 'Terjadi kesalahan koneksi sistem.', 'error');
-        } finally {
-            setLoading(false);
+        );
+
+        if (res.data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: idEdit ? "Mata pelajaran diperbarui!" : "Mata pelajaran baru ditambahkan!",
+                timer: 1500,
+                showConfirmButton: false,
+                iconColor: colors.primary
+            });
+            setNamaMapel('');
+            setIdEdit(null);
+            fetchMapel();
+        } else {
+            Swal.fire('Gagal', res.data.error || 'Terjadi kesalahan saat menyimpan.', 'error');
         }
-    };
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error', 'Terjadi kesalahan koneksi sistem.', 'error');
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleEdit = (m) => {
         setIdEdit(m.id_exam_mapel);
