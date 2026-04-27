@@ -14,7 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-$action = $_GET['action'] ?? '';
+// Otomatis mencari action dari URL (GET) atau dari Body (POST FormData)
+$action = $_GET['action'] ?? ($_POST['action'] ?? '');
 
 switch ($action) {
 
@@ -221,6 +222,75 @@ switch ($action) {
             $detail[] = $soal;
         }
         echo json_encode(["info" => $data_h, "soal" => $detail]);
+        break;
+
+    // --- 11. CRUD SOAL (TAMBAH & UPDATE SOAL) ---
+    case 'tambah_soal':
+    case 'update_soal':
+        // Karena React mengirim pakai FormData (ada file gambar), kita tangkap pakai $_POST
+        $id_ujian = (int)$_POST['id_ujian'];
+        $pertanyaan = $conn->real_escape_string($_POST['pertanyaan']);
+        $tipe_soal = $conn->real_escape_string($_POST['tipe_soal']);
+        $bobot = (float)$_POST['bobot'];
+        $kunci_esai = $conn->real_escape_string($_POST['kunci_esai'] ?? '');
+        $opsi_arr = json_decode($_POST['opsi'], true);
+        
+        $gambar_nama = null;
+        
+        // --- LOGIKA UPLOAD GAMBAR ---
+        if(isset($_FILES['gambar_soal']) && $_FILES['gambar_soal']['error'] == 0) {
+            $ext = pathinfo($_FILES['gambar_soal']['name'], PATHINFO_EXTENSION);
+            $gambar_nama = time() . '_' . rand(100,999) . '.' . $ext;
+            
+            // Pastikan folder untuk menyimpan gambar ujian ini ada
+            $target_dir = "../uploads/exam/";
+            if (!is_dir($target_dir)) {
+                mkdir($target_dir, 0777, true); // Buat folder otomatis kalau belum ada
+            }
+            move_uploaded_file($_FILES['gambar_soal']['tmp_name'], $target_dir . $gambar_nama);
+        }
+
+        // --- PROSES SIMPAN SOAL UTAMA ---
+        if ($action == 'tambah_soal') {
+            $gambar_insert = $gambar_nama ? "'$gambar_nama'" : "NULL";
+            $sql_soal = "INSERT INTO exam_soal (id_ujian, pertanyaan, tipe_soal, bobot, gambar, kunci_esai) 
+                         VALUES ($id_ujian, '$pertanyaan', '$tipe_soal', $bobot, $gambar_insert, '$kunci_esai')";
+                         
+            if($conn->query($sql_soal)) {
+                $id_soal = $conn->insert_id; // Ambil ID soal yang baru saja dibuat
+            } else {
+                echo json_encode(["success" => false, "error" => "Gagal simpan soal: " . $conn->error]);
+                exit;
+            }
+        } else {
+            // Logika Update Soal
+            $id_soal = (int)$_POST['id_soal'];
+            $gambar_update = $gambar_nama ? "gambar = '$gambar_nama'," : ""; // Hanya update nama gambar kalau diganti
+            
+            $sql_soal = "UPDATE exam_soal SET pertanyaan='$pertanyaan', tipe_soal='$tipe_soal', bobot=$bobot, $gambar_update kunci_esai='$kunci_esai' WHERE id_soal=$id_soal";
+            
+            if(!$conn->query($sql_soal)) {
+                echo json_encode(["success" => false, "error" => "Gagal update soal: " . $conn->error]);
+                exit;
+            }
+            
+            // Sapu bersih opsi lama sebelum memasukkan opsi yang baru (untuk update)
+            $conn->query("DELETE FROM exam_opsi WHERE id_soal=$id_soal");
+        }
+
+        // --- PROSES SIMPAN OPSI (Pilihan Ganda / Matching) ---
+        if ($tipe_soal != 'esai' && is_array($opsi_arr)) {
+            foreach($opsi_arr as $o) {
+                $teks = $conn->real_escape_string($o['teks'] ?? '');
+                $kunci = $conn->real_escape_string($o['kunci'] ?? '');
+                $is_benar = (int)($o['is_benar'] ?? 0);
+                
+                $conn->query("INSERT INTO exam_opsi (id_soal, teks_opsi, kunci_matching, is_benar) 
+                              VALUES ($id_soal, '$teks', '$kunci', $is_benar)");
+            }
+        }
+
+        echo json_encode(["success" => true, "message" => "Butir soal berhasil diamankan ke database!"]);
         break;
 
     default:

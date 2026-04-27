@@ -123,12 +123,19 @@ function AdminExam() {
     };
 
     const simpanSoal = async () => {
-        // VALIDASI CRITICAL: Pastikan idUjianBaru ada
-        if (!idUjianBaru) return alert("Simpan Konfigurasi Utama Terlebih Dahulu!");
-        if (!pertanyaan) return alert("Pertanyaan soal tidak boleh kosong!");
-        if (tipe === 'pilgan' && !opsi.some(o => o.is_benar === 1)) return alert("Wajib pilih kunci jawaban!");
-        
+        // 1. VALIDASI FRONTEND
+        if (!idUjianBaru) return alert("⚠️ Simpan Konfigurasi Utama Terlebih Dahulu!");
+        if (!pertanyaan.trim()) return alert("⚠️ Pertanyaan soal tidak boleh kosong!");
+        if (tipe === 'pilgan' && !opsi.some(o => o.is_benar === 1)) return alert("⚠️ Wajib pilih/set kunci jawaban untuk Pilihan Ganda!");
+        if (tipe === 'matching' && opsi.some(o => !o.teks.trim() || !o.kunci.trim())) return alert("⚠️ Opsi Kiri dan Kanan untuk tipe Matching tidak boleh kosong!");
+
+        const action = idSoalEdit ? 'update_soal' : 'tambah_soal';
+
+        // 2. BUNGKUS DATA KE FORMDATA
         const formData = new FormData();
+        // 🚀 KUNCI PERBAIKAN: Masukkan action ke dalam FormData agar terbaca oleh $_POST di PHP
+        formData.append('action', action); 
+        
         formData.append('id_ujian', idUjianBaru);
         if (idSoalEdit) formData.append('id_soal', idSoalEdit);
         formData.append('pertanyaan', pertanyaan);
@@ -137,18 +144,26 @@ function AdminExam() {
         formData.append('kunci_esai', kunciEsai);
         formData.append('opsi', JSON.stringify(opsi));
         if (gambar) formData.append('gambar_soal', gambar);
-
-        const action = idSoalEdit ? 'update_soal' : 'tambah_soal';
+        
+        // 3. PROSES PENGIRIMAN
         try {
+            // URL tetap menyertakan action untuk jaga-jaga jika PHP mengecek $_GET
             const res = await axios.post(`${API_BASE_URL}/exam/exam_controller.php?action=${action}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            if (res.data.success) {
-                alert("Butir Soal Berhasil Disimpan!");
+            
+            if (res.data && res.data.success) {
+                alert("✅ Butir Soal Berhasil Disimpan!");
                 resetFormSoal();
                 fetchExistingSoal();
+            } else {
+                alert("❌ Gagal menyimpan soal di Database: " + (res.data.error || res.data.message || "Kesalahan tak dikenal."));
+                console.error("Response Backend:", res.data);
             }
-        } catch (err) { alert("Sistem gagal menyimpan soal."); }
+        } catch (err) { 
+            alert("🌐 Server terputus atau gagal merespons. Cek console (F12)!");
+            console.error("Gagal Request Axios:", err); 
+        }
     };
 
     const loadSoalEdit = (s, idx) => {
